@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  ai-predictor:
+    build:
+      context: .
+      target: production
+    container_name: disaster-ai-predictor
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - WORKERS=4
+      - MODEL_PATH=/app/models/disaster_risk_model.pth
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - disaster-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
+  ai-predictor-dev:
+    build:
+      context: .
+      target: development
+    container_name: disaster-ai-predictor-dev
+    ports:
+      - "8001:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - WORKERS=1
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - .:/app
+      - ./models:/app/models
+    networks:
+      - disaster-network
+    profiles:
+      - dev
+
+networks:
+  disaster-network:
+    driver: bridge

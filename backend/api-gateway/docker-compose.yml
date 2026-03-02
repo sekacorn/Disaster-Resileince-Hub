@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # Redis for rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: gateway-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - disaster-hub
+
+  # API Gateway
+  api-gateway:
+    build: .
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      # JWT
+      JWT_SECRET: YourSuperSecretKeyForJWTTokenGenerationAndValidationMustBeLongEnough
+
+      # Service Endpoints
+      USER_SESSION_HOST: user-session
+      USER_SESSION_PORT: 8081
+      DISASTER_INTEGRATOR_HOST: disaster-integrator
+      DISASTER_INTEGRATOR_PORT: 8082
+      DISASTER_VISUALIZER_HOST: disaster-visualizer
+      DISASTER_VISUALIZER_PORT: 8083
+      LLM_SERVICE_HOST: llm-service
+      LLM_SERVICE_PORT: 8084
+      COLLABORATION_SERVICE_HOST: collaboration-service
+      COLLABORATION_SERVICE_PORT: 8085
+      AI_MODEL_HOST: ai-model
+      AI_MODEL_PORT: 8000
+
+      # JVM Options
+      JAVA_OPTS: "-Xms512m -Xmx1024m"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    networks:
+      - disaster-hub
+    volumes:
+      - ./logs:/app/logs
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  disaster-hub:
+    driver: bridge

@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: llm-service-test
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  h2:
+    console:
+      enabled: true
+
+server:
+  port: 0
+
+llm:
+  provider: huggingface
+  api-key: test-api-key
+  timeout: 5000
+  max-retries: 1
+
+  huggingface:
+    api-url: http://localhost:8080
+    model: test-model
+    max-tokens: 100
+    temperature: 0.7
+
+  xai:
+    api-url: http://localhost:8080
+    model: test-model
+    max-tokens: 100
+    temperature: 0.7
+
+  fallback:
+    enabled: true
+    response: Test fallback response
+
+jwt:
+  secret: test-secret-key-for-testing-purposes-only
+  expiration: 3600000
+
+logging:
+  level:
+    com.disaster.llm: DEBUG

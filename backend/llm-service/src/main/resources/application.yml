@@ -1,0 +1,123 @@
+spring:
+  application:
+    name: llm-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:disaster_llm}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
+server:
+  port: ${SERVER_PORT:8084}
+  servlet:
+    context-path: /
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# LLM Configuration
+llm:
+  provider: ${LLM_PROVIDER:huggingface}  # Options: huggingface, xai
+  api-key: ${LLM_API_KEY:your-api-key-here}
+  timeout: ${LLM_TIMEOUT:30000}  # 30 seconds
+  max-retries: ${LLM_MAX_RETRIES:3}
+
+  huggingface:
+    api-url: ${HUGGINGFACE_API_URL:https://api-inference.huggingface.co/models}
+    model: ${HUGGINGFACE_MODEL:meta-llama/Llama-2-7b-chat-hf}
+    max-tokens: ${HUGGINGFACE_MAX_TOKENS:500}
+    temperature: ${HUGGINGFACE_TEMPERATURE:0.7}
+
+  xai:
+    api-url: ${XAI_API_URL:https://api.x.ai/v1}
+    model: ${XAI_MODEL:grok-beta}
+    max-tokens: ${XAI_MAX_TOKENS:500}
+    temperature: ${XAI_TEMPERATURE:0.7}
+
+  fallback:
+    enabled: ${LLM_FALLBACK_ENABLED:true}
+    response: "I apologize, but the AI service is temporarily unavailable. Please try again later or contact support for assistance with your disaster-related query."
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:your-secret-key-here-change-in-production}
+  expiration: ${JWT_EXPIRATION:86400000}  # 24 hours
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      llmService:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 30s
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 100
+        slow-call-duration-threshold: 20s
+
+  retry:
+    instances:
+      llmService:
+        max-attempts: 3
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+
+# Logging
+logging:
+  level:
+    com.disaster.llm: ${LOG_LEVEL:INFO}
+    org.springframework.web: INFO
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# MBTI Personalization Settings
+mbti:
+  personalization:
+    enabled: ${MBTI_ENABLED:true}
+  default-type: ${MBTI_DEFAULT:INFJ}

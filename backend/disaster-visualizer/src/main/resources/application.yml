@@ -1,0 +1,198 @@
+server:
+  port: 8083
+  servlet:
+    context-path: /api/visualizer
+
+spring:
+  application:
+    name: disaster-visualizer
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:disaster_resilience_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-environment}
+  expiration: 86400000 # 24 hours in milliseconds
+
+# Visualization Configuration
+visualization:
+  max-map-size-km: 500
+  default-radius-km: 50
+  max-concurrent-renders: 10
+  render-timeout-seconds: 300
+  cache-ttl-minutes: 60
+
+  # Export settings
+  export:
+    max-file-size-mb: 100
+    png:
+      max-width: 4096
+      max-height: 4096
+      default-dpi: 300
+    svg:
+      max-width: 8192
+      max-height: 8192
+    stl:
+      max-vertices: 1000000
+
+# Resource monitoring
+monitoring:
+  enabled: true
+  interval-seconds: 30
+  thresholds:
+    cpu-warning: 70
+    cpu-critical: 90
+    memory-warning: 75
+    memory-critical: 90
+    gpu-warning: 80
+    gpu-critical: 95
+
+# MBTI Visualization Preferences
+mbti:
+  preferences:
+    ENTJ:
+      style: strategic
+      colors: bold
+      detail-level: high
+      data-emphasis: metrics
+    INTJ:
+      style: analytical
+      colors: professional
+      detail-level: very-high
+      data-emphasis: patterns
+    ENFJ:
+      style: collaborative
+      colors: warm
+      detail-level: medium
+      data-emphasis: people
+    INFJ:
+      style: insightful
+      colors: subtle
+      detail-level: high
+      data-emphasis: meaning
+    ENTP:
+      style: innovative
+      colors: dynamic
+      detail-level: medium
+      data-emphasis: possibilities
+    INTP:
+      style: logical
+      colors: neutral
+      detail-level: very-high
+      data-emphasis: systems
+    ENFP:
+      style: creative
+      colors: vibrant
+      detail-level: medium
+      data-emphasis: stories
+    INFP:
+      style: creative
+      colors: harmonious
+      detail-level: high
+      data-emphasis: values
+    ESTJ:
+      style: practical
+      colors: traditional
+      detail-level: medium
+      data-emphasis: facts
+    ISTJ:
+      style: detailed
+      colors: conservative
+      detail-level: very-high
+      data-emphasis: accuracy
+    ESFJ:
+      style: supportive
+      colors: friendly
+      detail-level: medium
+      data-emphasis: community
+    ISFJ:
+      style: thorough
+      colors: gentle
+      detail-level: high
+      data-emphasis: safety
+    ESTP:
+      style: action-oriented
+      colors: energetic
+      detail-level: low
+      data-emphasis: immediate
+    ISTP:
+      style: efficient
+      colors: minimal
+      detail-level: medium
+      data-emphasis: tools
+    ESFP:
+      style: engaging
+      colors: playful
+      detail-level: low
+      data-emphasis: experience
+    ISFP:
+      style: aesthetic
+      colors: natural
+      detail-level: medium
+      data-emphasis: beauty
+
+# Disaster Data Integration
+disaster-integrator:
+  base-url: ${DISASTER_INTEGRATOR_URL:http://localhost:8082}
+  timeout-seconds: 30
+  retry-attempts: 3
+
+# Logging
+logging:
+  level:
+    com.disaster.visualizer: ${LOG_LEVEL:INFO}
+    org.springframework.web: WARN
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/disaster-visualizer.log
+    max-size: 10MB
+    max-history: 30
+
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true

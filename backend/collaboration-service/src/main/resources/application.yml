@@ -1,0 +1,104 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: collaboration-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/collaboration_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+    open-in-view: false
+
+  redis:
+    host: localhost
+    port: 6379
+    password:
+    timeout: 2000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+
+  session:
+    store-type: redis
+    timeout: 3600
+    redis:
+      namespace: collaboration:session
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:yourSecretKeyForCollaborationServiceMustBe256BitsLongForHS256Algorithm}
+  expiration: 86400000
+  header: Authorization
+  prefix: Bearer
+
+# WebSocket Configuration
+websocket:
+  max-sessions-per-user: 5
+  heartbeat-interval: 30000
+  message-size-limit: 65536
+  allowed-origins: http://localhost:3000,http://localhost:8080
+
+# Collaboration Settings
+collaboration:
+  max-participants-per-session: 50
+  session-timeout-minutes: 120
+  annotation-max-size: 10000
+  presence-update-interval: 10000
+
+# MBTI Collaboration Features
+mbti:
+  features:
+    thinking-types: ["INTJ", "INTP", "ENTJ", "ENTP", "ISTJ", "ISTP", "ESTJ", "ESTP"]
+    feeling-types: ["INFJ", "INFP", "ENFJ", "ENFP", "ISFJ", "ISFP", "ESFJ", "ESFP"]
+    intuitive-types: ["INTJ", "INTP", "ENTJ", "ENTP", "INFJ", "INFP", "ENFJ", "ENFP"]
+    sensing-types: ["ISTJ", "ISTP", "ESTJ", "ESTP", "ISFJ", "ISFP", "ESFJ", "ESFP"]
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    redis:
+      enabled: true
+
+# Logging
+logging:
+  level:
+    com.disaster.collaboration: DEBUG
+    org.springframework.web: INFO
+    org.springframework.websocket: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
