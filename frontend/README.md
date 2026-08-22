@@ -1,6 +1,6 @@
 # Disaster Resilience Hub - Frontend
 
-A modern React frontend for the Disaster Resilience Hub platform with Three.js 3D visualizations, real-time collaboration, and MBTI-tailored user experiences.
+A modern React frontend for the Disaster Resilience Hub platform with Three.js 3D visualizations, real-time collaboration, and operational disaster management workflows.
 
 ## Features
 
@@ -8,7 +8,6 @@ A modern React frontend for the Disaster Resilience Hub platform with Three.js 3
 - **Three.js 3D Visualizations** for interactive disaster mapping
 - **Tailwind CSS** for responsive, customizable styling
 - **Authentication** with JWT and optional MFA
-- **MBTI-Tailored UI** - Personalized experiences based on personality types
 - **Real-time Collaboration** via WebSockets
 - **LLM Chat Interface** for AI-powered assistance
 - **Evacuation Planning** with route optimization
@@ -76,8 +75,10 @@ cp .env.example .env
 
 3. Configure environment variables in `.env`:
 ```env
-VITE_API_URL=http://localhost:8000
-VITE_WS_URL=ws://localhost:8000
+VITE_API_URL=http://localhost:8080
+VITE_WS_URL=ws://localhost:8085
+VITE_ENV=development
+VITE_DEMO_MODE=true
 ```
 
 ### Development
@@ -127,6 +128,7 @@ The frontend is included in the main `docker-compose.yml` at the project root.
 ### 1. Authentication
 
 - Email/password login with JWT tokens
+- Local demo mode with a seeded demo user
 - Registration with role selection
 - Optional MFA (TOTP) setup
 - Password strength validation
@@ -141,20 +143,7 @@ The frontend is included in the main `docker-compose.yml` at the project root.
 - Orbital camera controls
 - Responsive canvas rendering
 
-### 3. MBTI-Tailored Experience
-
-The UI adapts based on user's MBTI personality type:
-
-- **INTJ/INTP**: Detailed analytics, high complexity
-- **ENTJ/ENTP**: Executive dashboards, strategic views
-- **INFJ/INFP**: Narrative-driven, empathetic displays
-- **ENFJ/ENFP**: Collaborative, colorful interfaces
-- **ISTJ/ISFJ**: Structured, organized layouts
-- **ESTJ/ESFJ**: Professional, traditional dashboards
-- **ISTP/ISFP**: Functional, visual-focused
-- **ESTP/ESFP**: Action-oriented, interactive
-
-### 4. Real-time Collaboration
+### 3. Real-time Collaboration
 
 - WebSocket-powered chat rooms
 - Live user presence indicators
@@ -162,7 +151,7 @@ The UI adapts based on user's MBTI personality type:
 - Message history
 - User avatars and roles
 
-### 5. Evacuation Planning
+### 4. Evacuation Planning
 
 - Interactive route planning
 - Real-time route visualization
@@ -171,7 +160,7 @@ The UI adapts based on user's MBTI personality type:
 - Waypoint management
 - Multiple vehicle types support
 
-### 6. AI Chat Interface
+### 5. AI Chat Interface
 
 - LLM-powered assistance
 - Context-aware responses
@@ -179,7 +168,7 @@ The UI adapts based on user's MBTI personality type:
 - Suggested questions
 - Message history
 
-### 7. Data Upload
+### 6. Data Upload
 
 - Drag-and-drop file upload
 - Support for CSV, JSON, Excel, GeoJSON
@@ -205,21 +194,6 @@ theme: {
 }
 ```
 
-### MBTI Profiles
-
-Customize personality-based UI in `src/utils/mbtiStyles.js`:
-
-```javascript
-export const mbtiProfiles = {
-  INTJ: {
-    theme: { primary: 'indigo', accent: 'purple' },
-    preferences: { /* settings */ },
-    features: [ /* recommended features */ ],
-  },
-  // ...
-}
-```
-
 ## API Integration
 
 The frontend communicates with the backend through:
@@ -236,6 +210,8 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 ```
+
+For local demos, set `VITE_DEMO_MODE=true` to use built-in mock data for dashboard metrics, disaster markers, routes, collaboration rooms, uploads, and AI assistant responses.
 
 ## Browser Support
 
@@ -280,7 +256,7 @@ const api = axios.create({
 
 ## License
 
-Copyright (c) 2024 Disaster Resilience Hub. All rights reserved.
+Copyright (c) 2026 Disaster Resilience Hub. All rights reserved.
 
 ## Support
 

@@ -1,27 +1,26 @@
 # LLM Service - Disaster Resilience Hub
 
-AI-powered natural language processing microservice for disaster-related queries with MBTI-personalized responses.
+AI-powered natural language processing microservice for disaster-related questions, emergency guidance, troubleshooting, and response planning.
 
 ## Features
 
-- **Natural Language Query Processing**: Process disaster-related questions using advanced LLM models
-- **MBTI Personalization**: Tailored responses based on 16 personality types
-- **Multi-Provider Support**: Integration with Hugging Face and xAI (Grok) APIs
-- **Automatic Fallback**: Seamless provider switching when primary service is unavailable
-- **Context-Aware**: Considers disaster type, location, severity, and user context
-- **Troubleshooting Assistance**: Specialized troubleshooting query processing
-- **Query History**: Complete logging and history tracking
-- **Emergency Mode**: Public endpoints for emergency situations
+- **Natural Language Query Processing**: Process disaster-related questions using external LLM providers
+- **Context-Aware Responses**: Uses disaster type, location, severity, emergency status, and operational context
+- **Multi-Provider Support**: Integrates with Hugging Face and xAI-compatible APIs
+- **Automatic Fallback**: Switches providers or returns static guidance when the primary service is unavailable
+- **Troubleshooting Assistance**: Supports equipment, communications, and response workflow questions
+- **Query History**: Logs successful and failed requests for audit and follow-up
+- **Emergency Mode**: Public endpoints for immediate safety tips
 - **Circuit Breaker**: Resilience4j integration for fault tolerance
 
 ## Tech Stack
 
-- **Framework**: Spring Boot 3.2.0
+- **Framework**: Spring Boot 3.2
 - **Language**: Java 17
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL in production, H2 with the `local` profile
 - **Security**: JWT Authentication
 - **HTTP Client**: Spring WebFlux
-- **AI Providers**: Hugging Face, xAI
+- **AI Providers**: Hugging Face, xAI-compatible APIs
 - **Resilience**: Resilience4j
 - **Testing**: JUnit 5, Mockito
 
@@ -29,15 +28,16 @@ AI-powered natural language processing microservice for disaster-related queries
 
 ### Query Endpoints
 
-#### POST /api/llm/query
-Process a natural language query
+#### `POST /api/llm/query`
+
+Process a natural language disaster management query.
 
 **Request:**
+
 ```json
 {
   "query": "How do I prepare for an earthquake?",
   "context": {
-    "mbtiType": "INTJ",
     "disasterType": "earthquake",
     "location": "California",
     "severityLevel": 7,
@@ -47,119 +47,79 @@ Process a natural language query
 ```
 
 **Response:**
+
 ```json
 {
   "queryId": 1,
-  "response": "Strategic earthquake preparation steps...",
+  "response": "Start by securing heavy furniture, identifying safe interior spaces, and preparing supplies for at least 72 hours.",
   "originalQuery": "How do I prepare for an earthquake?",
-  "mbtiType": "INTJ",
   "provider": "huggingface",
-  "model": "meta-llama/Llama-2-7b-chat-hf",
+  "model": "mistralai/Mistral-7B-Instruct-v0.2",
   "processingTimeMs": 2500,
   "tokensUsed": 450,
   "success": true,
-  "timestamp": "2025-10-20T12:00:00",
-  "recommendedActions": ["Secure heavy furniture", "Create emergency kit"],
-  "followUpQuestions": ["Would you like evacuation procedures?"]
+  "timestamp": "2026-08-21T12:00:00",
+  "recommendedActions": ["Secure heavy furniture", "Create an emergency kit"],
+  "followUpQuestions": ["Do you need evacuation guidance?"]
 }
 ```
 
-#### POST /api/llm/troubleshoot
-Process a troubleshooting query
+#### `POST /api/llm/troubleshoot`
+
+Process a disaster-response troubleshooting query.
 
 **Request:**
+
 ```json
 {
   "issue": "My emergency radio is not working",
   "context": {
-    "mbtiType": "ISTJ",
-    "disasterType": "general"
+    "disasterType": "general",
+    "location": "field command post"
   }
 }
 ```
 
 ### History Endpoints
 
-#### GET /api/llm/history/{userId}
-Get query history for a user
+#### `GET /api/llm/history/{userId}`
+
+Get query history for a user.
 
 **Query Parameters:**
-- `page`: Page number (default: 0)
-- `size`: Page size (default: 20)
 
-**Response:**
-```json
-{
-  "content": [
-    {
-      "id": 1,
-      "userId": "user123",
-      "queryText": "How do I prepare?",
-      "responseText": "Here are the steps...",
-      "mbtiType": "INTJ",
-      "createdAt": "2025-10-20T12:00:00",
-      "wasSuccessful": true
-    }
-  ],
-  "totalElements": 50,
-  "totalPages": 3,
-  "size": 20
-}
-```
+- `page`: Page number, default `0`
+- `size`: Page size, default `20`
 
-#### GET /api/llm/session/{sessionId}
-Get all queries in a conversation session
+#### `GET /api/llm/session/{sessionId}`
 
-#### GET /api/llm/stats/{userId}
-Get query statistics for a user
+Get all queries in a conversation session.
 
-**Response:**
-```json
-{
-  "totalQueries": 50,
-  "totalTokensUsed": 10000
-}
-```
+#### `GET /api/llm/stats/{userId}`
 
-### Emergency Endpoints (Public - No Auth)
+Get query statistics for a user.
 
-#### GET /api/llm/emergency-tips/{disasterType}
-Get immediate safety tips for a disaster type
+### Emergency Endpoints
 
-**Example:** `/api/llm/emergency-tips/earthquake`
+#### `GET /api/llm/emergency-tips/{disasterType}`
+
+Get immediate public safety tips for a disaster type.
 
 ### Health Endpoint
 
-#### GET /api/llm/health
-Service health check
+#### `GET /actuator/health`
 
-## MBTI Personalization
+Service health check.
 
-The service adapts responses based on 16 MBTI personality types:
+## Local Demo Route
 
-### Analysts (Strategic & Logical)
-- **INTJ**: Strategic, systematic, long-term planning
-- **INTP**: Theoretical, detailed technical explanations
-- **ENTJ**: Decisive, action-oriented, leadership focus
-- **ENTP**: Innovative, multiple perspectives
+When the API gateway runs with the `local` profile, the frontend can use a mock chat endpoint without a database or external LLM key:
 
-### Diplomats (Empathetic & People-Focused)
-- **INFJ**: Empathetic, meaningful, values-based
-- **INFP**: Compassionate, authentic, values-aligned
-- **ENFJ**: Inspiring, community coordination
-- **ENFP**: Enthusiastic, creative, supportive
+```http
+POST http://localhost:8080/api/v1/llm/chat
+```
 
-### Sentinels (Practical & Reliable)
-- **ISTJ**: Step-by-step procedures, proven methods
-- **ISFJ**: Practical support, individual needs
-- **ESTJ**: Efficient, organized, results-oriented
-- **ESFJ**: People-centered, cooperative
-
-### Explorers (Adaptable & Action-Oriented)
-- **ISTP**: Hands-on, technical, flexible
-- **ISFP**: Compassionate, present-moment focus
-- **ESTP**: Quick action, immediate impact
-- **ESFP**: Enthusiastic, practical help
+The standalone LLM service still runs on port `8084`.
 
 ## Configuration
 
@@ -177,18 +137,18 @@ DB_PASSWORD=postgres
 SERVER_PORT=8084
 
 # LLM Configuration
-LLM_PROVIDER=huggingface  # or xai
+LLM_PROVIDER=huggingface
 LLM_API_KEY=your-api-key-here
 LLM_TIMEOUT=30000
 LLM_MAX_RETRIES=3
 
 # Hugging Face
 HUGGINGFACE_API_URL=https://api-inference.huggingface.co/models
-HUGGINGFACE_MODEL=meta-llama/Llama-2-7b-chat-hf
+HUGGINGFACE_MODEL=mistralai/Mistral-7B-Instruct-v0.2
 HUGGINGFACE_MAX_TOKENS=500
 HUGGINGFACE_TEMPERATURE=0.7
 
-# xAI (Grok)
+# xAI-compatible API
 XAI_API_URL=https://api.x.ai/v1
 XAI_MODEL=grok-beta
 XAI_MAX_TOKENS=500
@@ -201,60 +161,24 @@ LLM_FALLBACK_ENABLED=true
 JWT_SECRET=your-secret-key-here
 JWT_EXPIRATION=86400000
 
-# MBTI
-MBTI_ENABLED=true
-MBTI_DEFAULT=INFJ
-
 # Logging
 LOG_LEVEL=INFO
 ```
-
-## LLM Provider Setup
-
-### Hugging Face
-
-1. Sign up at [Hugging Face](https://huggingface.co/)
-2. Generate an API token
-3. Set `LLM_API_KEY` to your token
-4. Set `LLM_PROVIDER=huggingface`
-
-**Recommended Models:**
-- `meta-llama/Llama-2-7b-chat-hf`
-- `mistralai/Mistral-7B-Instruct-v0.2`
-- `google/flan-t5-xxl`
-
-### xAI (Grok)
-
-1. Sign up at [xAI](https://x.ai/)
-2. Generate an API key
-3. Set `LLM_API_KEY` to your key
-4. Set `LLM_PROVIDER=xai`
-
-**Models:**
-- `grok-beta`
 
 ## Running the Service
 
 ### Local Development
 
 ```bash
-# Build
-mvn clean install
-
-# Run
-mvn spring-boot:run
-
-# Run with profile
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+mvn clean package
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 ### Docker
 
 ```bash
-# Build image
 docker build -t disaster-llm-service .
 
-# Run container
 docker run -p 8084:8084 \
   -e DB_HOST=postgres \
   -e LLM_API_KEY=your-key \
@@ -262,40 +186,16 @@ docker run -p 8084:8084 \
   disaster-llm-service
 ```
 
-### Docker Compose
-
-```yaml
-services:
-  llm-service:
-    build: ./backend/llm-service
-    ports:
-      - "8084:8084"
-    environment:
-      DB_HOST: postgres
-      DB_NAME: disaster_llm
-      LLM_API_KEY: ${LLM_API_KEY}
-      LLM_PROVIDER: huggingface
-      JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      - postgres
-```
-
 ## Testing
 
 ```bash
-# Run all tests
 mvn test
-
-# Run with coverage
-mvn test jacoco:report
-
-# Run specific test
 mvn test -Dtest=LLMServiceTest
 ```
 
 ## Database Schema
 
-### llm_queries Table
+### `llm_queries`
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -303,7 +203,6 @@ mvn test -Dtest=LLMServiceTest
 | user_id | VARCHAR(100) | User identifier |
 | query_text | TEXT | User query |
 | response_text | TEXT | AI response |
-| mbti_type | VARCHAR(4) | MBTI personality type |
 | query_type | VARCHAR(50) | Query category |
 | disaster_type | VARCHAR(100) | Disaster context |
 | location | VARCHAR(255) | User location |
@@ -326,33 +225,24 @@ mvn test -Dtest=LLMServiceTest
 1. **LLMController**: REST API endpoints
 2. **LLMService**: Business logic orchestration
 3. **HuggingFaceClient**: Hugging Face API integration
-4. **XAIClient**: xAI API integration
-5. **MBTIPersonalizationService**: Personality-based customization
-6. **LLMQueryRepository**: Data persistence
+4. **XAIClient**: xAI-compatible API integration
+5. **LLMQueryRepository**: Data persistence
 
 ### Flow
 
-```
-User Request → Controller → LLMService → MBTI Service
-                                ↓
-                    Provider Selection (HF/xAI)
-                                ↓
+```text
+User Request -> Controller -> LLMService
+                                |
+                        Provider Selection
+                                |
                         API Call + Fallback
-                                ↓
+                                |
                         Response Processing
-                                ↓
+                                |
                     Query Saved to Database
-                                ↓
+                                |
                         Return to User
 ```
-
-### Resilience Features
-
-- **Circuit Breaker**: Prevents cascading failures
-- **Retry Logic**: Automatic retry with exponential backoff
-- **Fallback Provider**: Switches to alternative LLM on failure
-- **Static Fallback**: Returns helpful message when all providers fail
-- **Timeouts**: Configurable request timeouts
 
 ## Monitoring
 
@@ -366,70 +256,44 @@ User Request → Controller → LLMService → MBTI Service
 
 - Query processing time
 - Token usage
-- Provider success/failure rates
+- Provider success and failure rates
 - Circuit breaker states
 - Query volume by disaster type
-- MBTI distribution
 
 ## Security
 
-### JWT Authentication
+All endpoints except emergency and health endpoints require JWT authentication.
 
-All endpoints (except emergency and health) require JWT authentication.
-
-**Header:**
-```
+```http
 Authorization: Bearer <jwt-token>
 ```
 
-### Roles
-
-- **USER**: Standard user access
-- **ADMIN**: Full access including all user histories
-
-### Emergency Access
-
-Public endpoints for emergency situations don't require authentication:
-- `/api/llm/emergency-tips/{disasterType}`
-- `/api/llm/health`
-
 ## Best Practices
 
-1. **API Key Security**: Never commit API keys to version control
-2. **Rate Limiting**: Monitor token usage to avoid quota issues
-3. **Context Quality**: Provide detailed context for better responses
-4. **MBTI Accuracy**: Use accurate MBTI types for optimal personalization
-5. **Emergency Mode**: Prioritize emergency queries with appropriate context
-6. **Monitoring**: Track failed queries and processing times
+1. Never commit API keys to version control.
+2. Monitor token usage to avoid quota issues.
+3. Provide detailed disaster context for better responses.
+4. Prioritize emergency queries with clear severity and location context.
+5. Track failed queries and processing times.
 
 ## Troubleshooting
 
-### Common Issues
+**LLM API returns 401 Unauthorized**
 
-**Issue**: LLM API returns 401 Unauthorized
-- **Solution**: Check `LLM_API_KEY` is valid and has proper permissions
+Check that `LLM_API_KEY` is valid and has the right provider permissions.
 
-**Issue**: Slow response times
-- **Solution**: Increase `LLM_TIMEOUT`, check network latency, consider using faster models
+**Slow response times**
 
-**Issue**: Circuit breaker opens frequently
-- **Solution**: Check API provider status, verify rate limits, adjust circuit breaker thresholds
+Increase `LLM_TIMEOUT`, check network latency, or use a faster model.
 
-**Issue**: Database connection errors
-- **Solution**: Verify `DB_HOST`, `DB_PORT`, credentials, and PostgreSQL is running
+**Circuit breaker opens frequently**
 
-## Contributing
+Check API provider status, verify rate limits, and adjust circuit breaker thresholds.
 
-1. Follow Java code conventions
-2. Write unit tests for new features
-3. Update documentation
-4. Test with multiple MBTI types
-5. Verify fallback scenarios
+**Database connection errors**
+
+Verify `DB_HOST`, `DB_PORT`, credentials, and database availability. For local development, use the `local` profile to run against H2.
 
 ## License
 
-Dual-licensed under commercial and open-source licenses. See LICENSE files.
-
-## Support
-
-For issues or questions, contact the DisasterResilienceHub team.
+Dual-licensed under commercial and open-source licenses. See the root license files.

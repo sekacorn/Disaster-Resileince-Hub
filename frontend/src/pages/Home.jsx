@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { FaShieldAlt, FaMap, FaUsers, FaChartLine, FaBrain, FaRoute } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaMap, FaUsers, FaChartLine, FaBrain, FaRoute } from 'react-icons/fa';
 
 const Home = () => {
   const features = [
@@ -29,9 +29,9 @@ const Home = () => {
       description: 'Advanced analytics and visualization for disaster preparedness',
     },
     {
-      icon: <FaShieldAltAlt className="w-8 h-8" />,
-      title: 'MBTI-Tailored Experience',
-      description: 'Personalized UI and workflows based on your personality type',
+      icon: <FaCloudUploadAlt className="w-8 h-8" />,
+      title: 'Disaster Data Uploads',
+      description: 'Upload CSV, JSON, Excel, and GeoJSON files for operational analysis',
     },
   ];
 
@@ -113,10 +113,10 @@ const Home = () => {
             </div>
             <div>
               <div className="text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">
-                16 Types
+                Live Data
               </div>
               <div className="text-gray-600 dark:text-gray-400">
-                MBTI Personalization
+                Uploads & Analytics
               </div>
             </div>
           </div>

@@ -12,6 +12,7 @@ import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -37,6 +38,42 @@ public class GatewayConfig {
     private final LoggingFilter loggingFilter;
     private final RateLimitFilter rateLimitFilter;
 
+    @Value("${services.user-session.host:user-session}")
+    private String userSessionHost;
+
+    @Value("${services.user-session.port:8081}")
+    private int userSessionPort;
+
+    @Value("${services.disaster-integrator.host:disaster-integrator}")
+    private String disasterIntegratorHost;
+
+    @Value("${services.disaster-integrator.port:8082}")
+    private int disasterIntegratorPort;
+
+    @Value("${services.disaster-visualizer.host:disaster-visualizer}")
+    private String disasterVisualizerHost;
+
+    @Value("${services.disaster-visualizer.port:8083}")
+    private int disasterVisualizerPort;
+
+    @Value("${services.llm-service.host:llm-service}")
+    private String llmServiceHost;
+
+    @Value("${services.llm-service.port:8084}")
+    private int llmServicePort;
+
+    @Value("${services.collaboration-service.host:collaboration-service}")
+    private String collaborationServiceHost;
+
+    @Value("${services.collaboration-service.port:8085}")
+    private int collaborationServicePort;
+
+    @Value("${services.ai-model.host:ai-model}")
+    private String aiModelHost;
+
+    @Value("${services.ai-model.port:8000}")
+    private int aiModelPort;
+
     public GatewayConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
                         LoggingFilter loggingFilter,
                         RateLimitFilter rateLimitFilter) {
@@ -50,6 +87,13 @@ public class GatewayConfig {
      */
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+        String userSessionUri = "http://" + userSessionHost + ":" + userSessionPort;
+        String disasterIntegratorUri = "http://" + disasterIntegratorHost + ":" + disasterIntegratorPort;
+        String disasterVisualizerUri = "http://" + disasterVisualizerHost + ":" + disasterVisualizerPort;
+        String llmServiceUri = "http://" + llmServiceHost + ":" + llmServicePort;
+        String collaborationServiceUri = "http://" + collaborationServiceHost + ":" + collaborationServicePort;
+        String aiModelUri = "http://" + aiModelHost + ":" + aiModelPort;
+
         return builder.routes()
                 // Authentication Service Routes (Public)
                 .route("auth-login", r -> r
@@ -63,7 +107,7 @@ public class GatewayConfig {
                                         .setName("auth-circuit-breaker")
                                         .setFallbackUri("forward:/fallback/auth"))
                                 .rewritePath("/api/auth/(?<segment>.*)", "/${segment}"))
-                        .uri("http://user-session:8081"))
+                        .uri(userSessionUri))
 
                 // Authentication Service Routes (Protected)
                 .route("auth-protected", r -> r
@@ -76,7 +120,7 @@ public class GatewayConfig {
                                         .setName("auth-circuit-breaker")
                                         .setFallbackUri("forward:/fallback/auth"))
                                 .rewritePath("/api/auth/(?<segment>.*)", "/${segment}"))
-                        .uri("http://user-session:8081"))
+                        .uri(userSessionUri))
 
                 // User Service Routes
                 .route("users-service", r -> r
@@ -89,7 +133,7 @@ public class GatewayConfig {
                                         .setName("users-circuit-breaker")
                                         .setFallbackUri("forward:/fallback/users"))
                                 .rewritePath("/api/users/(?<segment>.*)", "/users/${segment}"))
-                        .uri("http://user-session:8081"))
+                        .uri(userSessionUri))
 
                 // Disaster Integrator Service Routes
                 .route("integrator-service", r -> r
@@ -102,7 +146,7 @@ public class GatewayConfig {
                                         .setName("integrator-circuit-breaker")
                                         .setFallbackUri("forward:/fallback/integrator"))
                                 .rewritePath("/api/integrator/(?<segment>.*)", "/${segment}"))
-                        .uri("http://disaster-integrator:8082"))
+                        .uri(disasterIntegratorUri))
 
                 // Disaster Visualizer Service Routes
                 .route("visualizer-service", r -> r
@@ -115,7 +159,7 @@ public class GatewayConfig {
                                         .setName("visualizer-circuit-breaker")
                                         .setFallbackUri("forward:/fallback/visualizer"))
                                 .rewritePath("/api/visualizer/(?<segment>.*)", "/${segment}"))
-                        .uri("http://disaster-visualizer:8083"))
+                        .uri(disasterVisualizerUri))
 
                 // LLM Service Routes
                 .route("llm-service", r -> r
@@ -128,7 +172,7 @@ public class GatewayConfig {
                                         .setName("llm-circuit-breaker")
                                         .setFallbackUri("forward:/fallback/llm"))
                                 .rewritePath("/api/llm/(?<segment>.*)", "/${segment}"))
-                        .uri("http://llm-service:8084"))
+                        .uri(llmServiceUri))
 
                 // Collaboration Service Routes
                 .route("collaboration-service", r -> r
@@ -141,7 +185,7 @@ public class GatewayConfig {
                                         .setName("collaboration-circuit-breaker")
                                         .setFallbackUri("forward:/fallback/collaboration"))
                                 .rewritePath("/api/collaboration/(?<segment>.*)", "/${segment}"))
-                        .uri("http://collaboration-service:8085"))
+                        .uri(collaborationServiceUri))
 
                 // AI Model Service Routes
                 .route("ai-model-service", r -> r
@@ -154,7 +198,7 @@ public class GatewayConfig {
                                         .setName("ai-circuit-breaker")
                                         .setFallbackUri("forward:/fallback/ai"))
                                 .rewritePath("/api/ai/(?<segment>.*)", "/${segment}"))
-                        .uri("http://ai-model:8000"))
+                        .uri(aiModelUri))
 
                 // Health Check Aggregation
                 .route("health-check", r -> r
@@ -170,6 +214,7 @@ public class GatewayConfig {
      * Key resolver for rate limiting based on user IP address
      */
     @Bean
+    @org.springframework.context.annotation.Primary
     public KeyResolver ipKeyResolver() {
         return exchange -> {
             String ipAddress = exchange.getRequest().getRemoteAddress() != null

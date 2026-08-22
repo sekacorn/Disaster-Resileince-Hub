@@ -14,6 +14,8 @@ import DisasterMap from '@pages/DisasterMap';
 import EvacuationPlanner from '@pages/EvacuationPlanner';
 import Collaborate from '@pages/Collaborate';
 import Profile from '@pages/Profile';
+import DataUploadPage from '@pages/DataUploadPage';
+import ChatPage from '@pages/ChatPage';
 
 // Components
 import Header from '@components/common/Header';
@@ -96,6 +98,29 @@ function App() {
                     <Collaborate />
                   </PrivateRoute>
                 }
+              />
+
+              <Route
+                path="/upload"
+                element={
+                  <PrivateRoute>
+                    <DataUploadPage />
+                  </PrivateRoute>
+                }
+              />
+
+              <Route
+                path="/chat"
+                element={
+                  <PrivateRoute>
+                    <ChatPage />
+                  </PrivateRoute>
+                }
+              />
+
+              <Route
+                path="/analytics"
+                element={<Navigate to="/dashboard" />}
               />
 
               <Route

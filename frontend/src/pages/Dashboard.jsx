@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { FaMap, FaRoute, FaUsers, FaChartBar, FaExclamationTriangle, FaUpload } from 'react-icons/fa';
 import { useAuth } from '@hooks/useAuth';
 import { disasterAPI } from '@services/api';
-import { getMBTIStyle, getRecommendedFeatures } from '@utils/mbtiStyles';
 import { toast } from 'react-toastify';
 
 const Dashboard = () => {
@@ -11,9 +10,6 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [recentDisasters, setRecentDisasters] = useState([]);
-
-  const mbtiProfile = user?.mbti_type ? getMBTIStyle(user.mbti_type) : null;
-  const recommendedFeatures = user?.mbti_type ? getRecommendedFeatures(user.mbti_type) : [];
 
   useEffect(() => {
     loadDashboardData();
@@ -112,11 +108,6 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold mb-2">
           Welcome back, {user?.full_name || user?.email}
         </h1>
-        {mbtiProfile && (
-          <p className="text-gray-600 dark:text-gray-400">
-            Your profile: {mbtiProfile.name} ({user.mbti_type})
-          </p>
-        )}
         {user?.role && (
           <span className="badge badge-primary mt-2">
             {user.role.replace('_', ' ').toUpperCase()}
@@ -164,23 +155,6 @@ const Dashboard = () => {
           ))}
         </div>
       </div>
-
-      {/* Recommended Features (MBTI-based) */}
-      {recommendedFeatures.length > 0 && (
-        <div className="card bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20">
-          <h3 className="text-lg font-bold mb-2">Recommended for You</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            Based on your {user.mbti_type} personality type
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {recommendedFeatures.map((feature, index) => (
-              <span key={index} className="badge badge-primary">
-                {feature}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Recent Disasters */}
       <div>

@@ -5,6 +5,18 @@ import { toast } from 'react-toastify';
 
 export const AuthContext = createContext(null);
 
+const demoUser = {
+  id: 'local-demo-user',
+  username: 'demo',
+  email: 'demo@example.com',
+  firstName: 'Demo',
+  lastName: 'User',
+  full_name: 'Demo User',
+  role: 'USER',
+  organization: 'Local Development',
+  mfa_enabled: false,
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,8 +34,10 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data);
       } catch (error) {
         localStorage.removeItem('token');
-        setUser(null);
+        setUser(import.meta.env.VITE_DEMO_MODE === 'true' ? demoUser : null);
       }
+    } else if (import.meta.env.VITE_DEMO_MODE === 'true') {
+      setUser(demoUser);
     }
     setLoading(false);
   };

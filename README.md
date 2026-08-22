@@ -14,6 +14,7 @@
 ## Table of Contents
 
 - [Overview](#overview)
+- [Showcase](#showcase)
 - [Key Features](#key-features)
 - [Architecture](#architecture)
 - [Licensing](#licensing)
@@ -41,8 +42,25 @@ DisasterResilienceHub addresses the critical need for integrated disaster prepar
 - **FHIR-compliant health record integration** for personalized care
 - **Real-time collaboration tools** for coordinated response
 - **Natural language queries** via integrated LLM
-- **MBTI-tailored user interfaces** for all 16 personality types
 - **Multi-language support** for global accessibility
+
+---
+
+## Showcase
+
+The application includes a local demo experience with mock disaster response data across the main workflows.
+
+| Dashboard | 3D Disaster Map |
+| --- | --- |
+| ![Dashboard with active disaster metrics, quick actions, and recent incidents](./screenshot-01.jpg) | ![3D disaster map with severity markers and export controls](./screenshot-02.jpg) |
+
+| Evacuation Planner | Collaboration Rooms |
+| --- | --- |
+| ![Evacuation planner with saved routes and route planning form](./screenshot-03.jpg) | ![Emergency operations collaboration room with team chat and active users](./screenshot-04.jpg) |
+
+| Data Upload | AI Assistant |
+| --- | --- |
+| ![Disaster data upload page for CSV, JSON, Excel, and GeoJSON files](./screenshot-05.jpg) | ![AI assistant page with suggested disaster management questions](./screenshot-06.jpg) |
 
 ---
 
@@ -81,13 +99,13 @@ DisasterResilienceHub addresses the critical need for integrated disaster prepar
 - Evacuation route visualization
 - Three.js rendering with zoom/pan controls
 - Export to PNG, SVG, STL formats
-- MBTI-tailored visual styles
+- Operational visual styles for field and command-center use
 
 ### LLM Integration
 - Natural language disaster queries
-- MBTI-personalized responses
+- Context-aware disaster response assistance
 - Troubleshooting assistance
-- Strategic advice for leaders (ENTJ), empathetic for advocates (INFJ)
+- Strategic advice for emergency leaders and response teams
 
 ### Real-Time Collaboration
 - WebSocket-based collaborative sessions
@@ -146,7 +164,7 @@ DisasterResilienceHub uses a **dual licensing model**:
 - All core features included
 - Community support
 
-[View Open Source License](./LICENSE-OPEN-SOURCE.md)
+[View License](./LICENSE)
 
 ### Commercial License (For-Profit)
 - **4% of gross revenue** attributable to the software
@@ -155,7 +173,7 @@ DisasterResilienceHub uses a **dual licensing model**:
 - Dedicated technical support
 - Custom SLA agreements
 
-[View Commercial License](./LICENSE-COMMERCIAL.md)
+[View License](./LICENSE)
 
 **Contact for licensing**: licensing@disasterresiliencehub.org
 
@@ -166,7 +184,7 @@ DisasterResilienceHub uses a **dual licensing model**:
 - **Docker** & **Docker Compose** (recommended)
 - **Java 17** (for local development)
 - **Node.js 18+** (for frontend)
-- **Python 3.10+** (for AI service)
+- **Python 3.10+** (for AI service; current requirements also support Python 3.12)
 - **PostgreSQL 16** (if not using Docker)
 - **Redis 7** (if not using Docker)
 - **Git**
@@ -180,7 +198,7 @@ DisasterResilienceHub uses a **dual licensing model**:
 1. **Clone the repository**
    ```bash
    git clone https://github.com/sekacorn/Disaster-Resileince-Hub.git
-   cd DisasterResilienceHub
+   cd Disaster-Resileince-Hub
    ```
 
 2. **Create environment file**
@@ -209,8 +227,9 @@ DisasterResilienceHub uses a **dual licensing model**:
 
 6. **Access the application**
    - Frontend: http://localhost:3000
+   - Demo Dashboard: http://localhost:3000/dashboard
    - API Gateway: http://localhost:8080
-   - API Documentation: http://localhost:8080/swagger-ui.html
+   - Local Mock Stats: http://localhost:8080/api/v1/disasters/stats
 
 7. **Default admin credentials**
    ```
@@ -229,8 +248,8 @@ docker-compose ps
 docker-compose logs -f
 
 # Check individual service health
+curl http://localhost:8080/actuator/health  # API Gateway
 curl http://localhost:8081/actuator/health  # User Session
-curl http://localhost:8082/actuator/health  # Disaster Integrator
 curl http://localhost:8000/health           # AI Model
 ```
 
@@ -493,12 +512,12 @@ Users can enable MFA in account settings.
    # User Session
    cd backend/user-session
    mvn clean install
-   mvn spring-boot:run
+   mvn spring-boot:run -Dspring-boot.run.profiles=local
 
    # Disaster Integrator
    cd backend/disaster-integrator
    mvn clean install
-   mvn spring-boot:run
+   mvn spring-boot:run -Dspring-boot.run.profiles=local
    ```
 
 2. **AI Model**
@@ -512,7 +531,16 @@ Users can enable MFA in account settings.
    ```bash
    cd frontend
    npm install
-   npm start
+   npm run dev
+   ```
+
+   Use these values in `frontend/.env` for the local demo:
+
+   ```env
+   VITE_API_URL=http://localhost:8080
+   VITE_WS_URL=ws://localhost:8085
+   VITE_ENV=development
+   VITE_DEMO_MODE=true
    ```
 
 ### Project Structure
@@ -627,7 +655,7 @@ kubectl scale deployment disaster-integrator --replicas=3
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+We welcome contributions. Open an issue or pull request in the repository with a clear summary of the proposed change.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -640,13 +668,11 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 ## Support
 
 ### Community Support (Open Source Users)
-- GitHub Issues: https://github.com/your-org/DisasterResilienceHub/issues
-- Documentation: https://docs.disasterresiliencehub.org
-- Community Forum: https://community.disasterresiliencehub.org
+- GitHub Issues: https://github.com/sekacorn/Disaster-Resileince-Hub/issues
+- Documentation: [README.md](./README.md) and [GETTING_STARTED.md](./GETTING_STARTED.md)
 
 ### Enterprise Support (Commercial License)
 - Email: support@disasterresiliencehub.org
-- Phone: +1-XXX-XXX-XXXX
 - SLA-based priority support
 - Dedicated technical account manager
 
@@ -668,8 +694,7 @@ Report security vulnerabilities to: security@disasterresiliencehub.org
 ## License
 
 This project is dual-licensed:
-- [Apache 2.0](./LICENSE-OPEN-SOURCE.md) for non-profit use
-- [Commercial License](./LICENSE-COMMERCIAL.md) for for-profit use
+- [Project License](./LICENSE)
 
 See [LICENSE](./LICENSE) for details.
 
@@ -685,4 +710,4 @@ Together, we can save lives and build resilient communities.
 
 **Made with care for humanity**
 
-Copyright © 2025 DisasterResilienceHub
+Copyright © 2026 DisasterResilienceHub

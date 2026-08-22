@@ -14,7 +14,6 @@ const Profile = () => {
     email: user?.email || '',
     phone: user?.phone || '',
     organization: user?.organization || '',
-    mbti_type: user?.mbti_type || '',
   });
   const [activityLog, setActivityLog] = useState([]);
   const [showMFASetup, setShowMFASetup] = useState(false);
@@ -75,13 +74,6 @@ const Profile = () => {
     { id: 'security', label: 'Security', icon: <FaShieldAlt /> },
     { id: 'preferences', label: 'Preferences', icon: <FaCog /> },
     { id: 'activity', label: 'Activity', icon: <FaHistory /> },
-  ];
-
-  const mbtiTypes = [
-    'INTJ', 'INTP', 'ENTJ', 'ENTP',
-    'INFJ', 'INFP', 'ENFJ', 'ENFP',
-    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
-    'ISTP', 'ISFP', 'ESTP', 'ESFP',
   ];
 
   return (
@@ -163,24 +155,6 @@ const Profile = () => {
                     onChange={handleInputChange}
                     className="input"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    MBTI Type
-                  </label>
-                  <select
-                    name="mbti_type"
-                    value={profileData.mbti_type}
-                    onChange={handleInputChange}
-                    className="input"
-                  >
-                    <option value="">Select MBTI Type</option>
-                    {mbtiTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">

@@ -6,12 +6,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.header.XFrameOptionsServerHttpHeadersWriter.Mode;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 /**
  * Security Configuration for API Gateway
@@ -46,6 +46,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
+                        .pathMatchers("/api/v1/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/actuator/health/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/actuator/info").permitAll()
 
@@ -55,7 +56,7 @@ public class SecurityConfig {
 
                 // Security headers
                 .headers(headers -> headers
-                        .frameOptions(ServerHttpSecurity.HeaderSpec.FrameOptionsSpec::deny)
+                        .frameOptions(frameOptions -> frameOptions.mode(Mode.DENY))
                         .contentSecurityPolicy(csp -> csp
                                 .policyDirectives("default-src 'self'; " +
                                         "frame-ancestors 'none'; " +

@@ -159,11 +159,11 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- H2 for testing -->
+        <!-- H2 for local development and testing -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- Testcontainers for integration tests -->

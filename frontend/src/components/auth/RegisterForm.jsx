@@ -9,13 +9,6 @@ const RegisterForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const mbtiTypes = [
-    'INTJ', 'INTP', 'ENTJ', 'ENTP',
-    'INFJ', 'INFP', 'ENFJ', 'ENFP',
-    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
-    'ISTP', 'ISFP', 'ESTP', 'ESFP',
-  ];
-
   const formik = useFormik({
     initialValues: {
       email: '',
@@ -24,7 +17,6 @@ const RegisterForm = () => {
       full_name: '',
       organization: '',
       role: 'public_user',
-      mbti_type: '',
     },
     validationSchema: Yup.object({
       email: Yup.string()
@@ -43,7 +35,6 @@ const RegisterForm = () => {
         .required('Full name is required'),
       organization: Yup.string(),
       role: Yup.string().required('Role is required'),
-      mbti_type: Yup.string(),
     }),
     onSubmit: async (values) => {
       setLoading(true);
@@ -198,28 +189,6 @@ const RegisterForm = () => {
           <option value="government_official">Government Official</option>
           <option value="data_analyst">Data Analyst</option>
         </select>
-      </div>
-
-      {/* MBTI Type */}
-      <div>
-        <label htmlFor="mbti_type" className="block text-sm font-medium mb-2">
-          MBTI Type (Optional)
-        </label>
-        <select
-          id="mbti_type"
-          {...formik.getFieldProps('mbti_type')}
-          className="input"
-        >
-          <option value="">Select your MBTI type</option>
-          {mbtiTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-        <p className="text-xs text-gray-500 mt-1">
-          This helps personalize your experience
-        </p>
       </div>
 
       {/* Submit Button */}

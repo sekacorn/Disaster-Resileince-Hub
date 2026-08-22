@@ -8,8 +8,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies needed to build the static app
+RUN npm ci
 
 # Copy source code
 COPY . .

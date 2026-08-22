@@ -3,8 +3,9 @@ package com.disaster.collaboration.service;
 import com.disaster.collaboration.dto.SessionRequest;
 import com.disaster.collaboration.dto.SessionResponse;
 import com.disaster.collaboration.exception.ResourceNotFoundException;
-import com.disaster.collaboration.exception.SessionFullException;
 import com.disaster.collaboration.model.CollaborationSession;
+import com.disaster.collaboration.model.ParticipantRole;
+import com.disaster.collaboration.model.ParticipantStatus;
 import com.disaster.collaboration.model.SessionParticipant;
 import com.disaster.collaboration.repository.ParticipantRepository;
 import com.disaster.collaboration.repository.SessionRepository;
@@ -81,7 +82,7 @@ public class SessionService {
 
         // Cache in Redis
         cacheSession(session);
-        addToActiveSessions(session.getId());
+        addToActiveSession(session.getId());
 
         log.info("Session created successfully: {}", session.getId());
         return SessionResponse.fromEntity(session);

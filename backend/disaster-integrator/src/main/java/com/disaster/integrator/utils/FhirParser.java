@@ -48,8 +48,7 @@ public class FhirParser {
                 .fhirResourceId(patient.getIdElement().getIdPart())
                 .source("FHIR_SERVER")
                 .fhirResourceJson(jsonString)
-                .dataEncrypted(true)
-                .verified(true);
+                .dataEncrypted(true);
 
         // Extract name
         if (patient.hasName() && !patient.getName().isEmpty()) {
@@ -155,8 +154,7 @@ public class FhirParser {
                 .patientId(patient.getId())
                 .fhirResourceId(patient.getIdElement().getIdPart())
                 .source("FHIR_SERVER")
-                .dataEncrypted(true)
-                .verified(true);
+                .dataEncrypted(true);
 
         // Extract name
         if (patient.hasName() && !patient.getName().isEmpty()) {

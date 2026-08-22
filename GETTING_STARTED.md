@@ -15,7 +15,7 @@ Before you begin, ensure you have the following installed:
 **Optional (for local development):**
 - Java 17 (OpenJDK)
 - Node.js 18+
-- Python 3.10+
+- Python 3.10+ (Python 3.12 also works with the current requirements)
 - Maven 3.8+
 
 ---
@@ -26,7 +26,7 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 git clone https://github.com/sekacorn/Disaster-Resileince-Hub.git
-cd DisasterResilienceHub
+cd Disaster-Resileince-Hub
 ```
 
 ### 2. Configure Environment
@@ -62,9 +62,14 @@ docker-compose up -d
 This will start:
 - PostgreSQL database (Port 5432)
 - Redis cache (Port 6379)
+- API Gateway (Port 8080)
 - User Session service (Port 8081)
 - Disaster Integrator service (Port 8082)
+- Disaster Visualizer service (Port 8083)
+- LLM service (Port 8084)
+- Collaboration service (Port 8085)
 - AI Model service (Port 8000)
+- Frontend (Port 3000)
 - NGINX reverse proxy (Port 80/443)
 
 ### 4. Verify Services Are Running
@@ -81,8 +86,8 @@ All services should show `Up` status.
 # User Session Service
 curl http://localhost:8081/actuator/health
 
-# Disaster Integrator Service
-curl http://localhost:8082/actuator/health
+# API Gateway
+curl http://localhost:8080/actuator/health
 
 # AI Model Service
 curl http://localhost:8000/health
@@ -92,9 +97,20 @@ All should return `{"status":"UP"}` or similar.
 
 ### 6. Access the Application
 
-- **API Gateway**: http://localhost:8080 *(when implemented)*
-- **Frontend**: http://localhost:3000 *(when implemented)*
+- **Frontend**: http://localhost:3000
+- **Local Demo Dashboard**: http://localhost:3000/dashboard
+- **API Gateway**: http://localhost:8080
+- **Gateway Mock Data**: http://localhost:8080/api/v1/disasters/stats
 - **Direct API Access**: http://localhost:8081 (User Session)
+
+For local development without Docker, use the frontend `.env` values below:
+
+```env
+VITE_API_URL=http://localhost:8080
+VITE_WS_URL=ws://localhost:8085
+VITE_ENV=development
+VITE_DEMO_MODE=true
+```
 
 ---
 
@@ -431,7 +447,7 @@ docker-compose exec postgres psql -U drh_user -d disaster_resilience -c "SELECT 
 ## Next Steps
 
 1. **Explore the API** - See [README.md](./README.md) for complete API documentation
-2. **Read the Project Status** - See [PROJECT_STATUS.md](./PROJECT_STATUS.md) for implementation details
+2. **Explore the Frontend Demo** - Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard)
 3. **Configure for Production** - See deployment section in README.md
 4. **Set up Monitoring** - Configure Prometheus and Grafana
 5. **Review Security** - Audit settings for production use
@@ -441,7 +457,7 @@ docker-compose exec postgres psql -U drh_user -d disaster_resilience -c "SELECT 
 ## Getting Help
 
 ### Community Support (Open Source)
-- GitHub Issues: https://github.com/sekacorn/Disaster-Resileince-Hub.gi
+- GitHub Issues: https://github.com/sekacorn/Disaster-Resileince-Hub
 - Documentation: [README.md](./README.md)
 
 ### Enterprise Support (Commercial License)
@@ -459,16 +475,16 @@ Choose the appropriate license:
 
 **Non-Profit / Educational / Humanitarian:**
 - FREE under Apache 2.0 License
-- See [LICENSE-OPEN-SOURCE.md](./LICENSE-OPEN-SOURCE.md)
+- See [LICENSE](./LICENSE)
 
 **For-Profit / Commercial:**
 - 4% of gross revenue
 - Includes enterprise features (SSO, MFA)
-- See [LICENSE-COMMERCIAL.md](./LICENSE-COMMERCIAL.md)
+- See [LICENSE](./LICENSE)
 - Contact: licensing@disasterresiliencehub.org
 
 ---
 
 **Ready to save lives and build resilient communities!**
 
-Copyright © 2025 DisasterResilienceHub
+Copyright © 2026 DisasterResilienceHub

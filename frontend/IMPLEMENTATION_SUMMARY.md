@@ -2,7 +2,7 @@
 
 ## Overview
 
-Successfully created a complete React 18 frontend application with Three.js 3D visualizations, real-time collaboration, MBTI-tailored UI, and comprehensive disaster management features.
+Successfully created a complete React 18 frontend application with Three.js 3D visualizations, real-time collaboration, and comprehensive disaster management features.
 
 ## Project Statistics
 
@@ -53,14 +53,14 @@ frontend/
 │   │   ├── DisasterMap.jsx            # 3D disaster map viewer
 │   │   ├── EvacuationPlanner.jsx      # Evacuation route planner
 │   │   ├── Collaborate.jsx            # Collaboration rooms
+│   │   ├── DataUploadPage.jsx         # Data upload workflow
+│   │   ├── ChatPage.jsx               # AI assistant page
 │   │   └── Profile.jsx                # User profile & settings
 │   ├── services/
 │   │   ├── api.js                     # Axios API client with interceptors
 │   │   └── websocket.js               # WebSocket service
 │   ├── styles/
 │   │   └── index.css                  # Global styles & Tailwind
-│   ├── utils/
-│   │   └── mbtiStyles.js              # MBTI personality-based styling
 │   └── main.jsx                       # Application entry point
 ├── public/                            # Static assets
 ├── Dockerfile                         # Multi-stage Docker build
@@ -107,17 +107,7 @@ frontend/
 - **Legend** for severity levels
 - **Performance Optimized** with React Three Fiber
 
-### 4. MBTI-Tailored User Experience
-
-- **16 Personality Profiles** (INTJ, ENTP, etc.)
-- **Customized Themes** per personality type
-- **Adaptive Layouts** (minimal, executive, artistic, etc.)
-- **Personalized Features** recommendations
-- **Variable Complexity** levels
-- **Automation Preferences** based on type
-- **Dynamic Styling** system
-
-### 5. Real-time Collaboration
+### 4. Real-time Collaboration
 
 - **WebSocket Integration** with Socket.IO
 - **Collaboration Rooms** with user presence
@@ -127,7 +117,7 @@ frontend/
 - **Typing Indicators** (foundation)
 - **Active Users List**
 
-### 6. Disaster Management
+### 5. Disaster Management
 
 - **Dashboard** with stats and quick actions
 - **3D Disaster Map** with filtering
@@ -136,7 +126,7 @@ frontend/
 - **Filter by Type/Severity/Date**
 - **Recent Disasters** feed
 
-### 7. Evacuation Planning
+### 6. Evacuation Planning
 
 - **Route Planning Form** with start/end locations
 - **Visual Route Display** on canvas
@@ -147,7 +137,7 @@ frontend/
 - **Disaster-specific** routing
 - **Saved Routes** management
 
-### 8. AI Chat Interface
+### 7. AI Chat Interface
 
 - **LLM-Powered Chat** with context
 - **Message History** with timestamps
@@ -157,7 +147,7 @@ frontend/
 - **User/Assistant Avatars**
 - **Scrollable Message List**
 
-### 9. Data Management
+### 8. Data Management
 
 - **Drag-and-Drop Upload** with react-dropzone
 - **Multiple File Formats** (CSV, JSON, Excel, GeoJSON)
@@ -166,10 +156,9 @@ frontend/
 - **Batch Processing** capability
 - **Upload Guidelines** documentation
 
-### 10. User Profile & Settings
+### 9. User Profile & Settings
 
 - **Profile Management** (name, email, phone, org)
-- **MBTI Type Selection**
 - **MFA Enable/Disable**
 - **Password Change** form
 - **Preferences** (notifications, auto-save)
@@ -311,11 +300,12 @@ Stage 2: Serve (Nginx Alpine)
 
 ```env
 # API endpoints
-VITE_API_URL=http://localhost:8000
-VITE_WS_URL=ws://localhost:8000
+VITE_API_URL=http://localhost:8080
+VITE_WS_URL=ws://localhost:8085
 
 # Environment
 VITE_ENV=development
+VITE_DEMO_MODE=true
 
 # Feature flags
 VITE_ENABLE_ANALYTICS=true
@@ -359,36 +349,6 @@ docker build -t disaster-hub-frontend .
 docker run -p 80:80 disaster-hub-frontend
 ```
 
-## MBTI Personality Profiles
-
-### Analysts (NT)
-
-- **INTJ**: Minimal layout, detailed analytics, high automation
-- **INTP**: Customizable interface, interactive data, selective automation
-- **ENTJ**: Executive dashboard, hierarchical layout, high automation
-- **ENTP**: Dynamic interface, varied visualizations, moderate automation
-
-### Diplomats (NF)
-
-- **INFJ**: Harmonious design, narrative-driven, moderate automation
-- **INFP**: Peaceful layout, empathetic data, minimal automation
-- **ENFJ**: Collaborative interface, people-focused, moderate automation
-- **ENFP**: Energetic design, colorful visuals, low automation
-
-### Sentinels (SJ)
-
-- **ISTJ**: Structured layout, precise data, high automation
-- **ISFJ**: Supportive design, clear visualizations, moderate automation
-- **ESTJ**: Professional interface, factual data, high automation
-- **ESFJ**: Friendly layout, accessible data, moderate automation
-
-### Explorers (SP)
-
-- **ISTP**: Functional design, technical analysis, selective automation
-- **ISFP**: Artistic layout, visual documentation, low automation
-- **ESTP**: Action-oriented interface, real-time data, moderate automation
-- **ESFP**: Vibrant design, engaging visuals, low automation
-
 ## Security Features
 
 - JWT token storage and management
@@ -429,11 +389,12 @@ docker run -p 80:80 disaster-hub-frontend
 - Component rendering
 - Hook behavior
 - Utility functions
-- MBTI styling logic
+- Utility functions
 
 ### Integration Tests (to be implemented)
 
 - Authentication flow
+- Demo-mode mock data flows
 - API integration
 - WebSocket communication
 - Form submissions
@@ -524,7 +485,6 @@ The Disaster Resilience Hub frontend is a modern, feature-rich React application
 - **Cutting-edge 3D visualizations** for disaster mapping
 - **Real-time collaboration** capabilities
 - **AI-powered assistance** for decision making
-- **Personalized experiences** based on MBTI types
 - **Comprehensive disaster management** tools
 - **Production-ready deployment** with Docker
 - **Responsive and accessible** design

@@ -1,11 +1,17 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import LoginForm from '@components/auth/LoginForm';
 import MFASetup from '@components/auth/MFASetup';
+import { useAuth } from '@hooks/useAuth';
 
 const Login = () => {
   const [showMFA, setShowMFA] = useState(false);
   const [mfaToken, setMfaToken] = useState(null);
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleLoginSuccess = (data) => {
     if (data.requires_mfa) {
