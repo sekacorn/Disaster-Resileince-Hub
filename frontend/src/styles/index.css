@@ -14,6 +14,32 @@
   #root {
     @apply h-full;
   }
+
+  /*
+   * WCAG 2.4.7 Focus Visible. The .btn and .input classes ring on :focus, which
+   * also fires on mouse click; these rules give every other interactive element a
+   * visible indicator and scope it to :focus-visible so pointer users do not see
+   * a ring they did not ask for. Keyboard users always do.
+   */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible,
+  [tabindex]:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 rounded;
+  }
+
+  /*
+   * Containers made focusable purely so focus can be moved to them after a route
+   * change. They are not controls, so an outline would be misleading.
+   */
+  [tabindex="-1"]:focus,
+  [tabindex="-1"]:focus-visible {
+    @apply outline-none ring-0;
+  }
 }
 
 @layer components {
@@ -91,6 +117,38 @@
 }
 
 @layer utilities {
+  /*
+   * Available to assistive technology, invisible on screen. Used for labels and
+   * live-region text that would be redundant sighted-side.
+   */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /*
+   * Hidden until focused, for the skip link. Keeping it in the DOM rather than
+   * rendering it on focus means it is reachable by the very first Tab press.
+   */
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -165,4 +223,50 @@
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
+}
+
+/*
+ * WCAG 2.3.3 Animation from Interactions.
+ *
+ * Vestibular disorders make large motion genuinely painful, and this application is
+ * used under stress during emergencies. Honour the OS-level preference: reduce motion
+ * to a near-instant state change rather than removing it, so transitions that convey
+ * meaning still land without the movement.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * WCAG 1.4.11 Non-text Contrast under Windows High Contrast / forced-colors.
+ *
+ * Forced colours discard the palette, so state carried only by background colour
+ * disappears. Restore focus and active state with system colour keywords, which are
+ * the only colours guaranteed to survive.
+ */
+@media (forced-colors: active) {
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .btn {
+    border: 1px solid ButtonText;
+  }
+
+  [aria-current="page"] {
+    outline: 2px solid Highlight;
+  }
 }

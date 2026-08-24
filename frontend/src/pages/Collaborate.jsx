@@ -94,39 +94,58 @@ const Collaborate = () => {
             Collaboration Rooms
           </h2>
           <button
+            type="button"
             onClick={() => setShowCreateModal(true)}
             className="btn btn-primary btn-sm"
+            /* Icon-only control: without a name it announces as just "button". */
+            aria-label="Create a new collaboration room"
           >
-            <FaPlus />
+            <FaPlus aria-hidden="true" />
           </button>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="spinner"></div>
+          <div className="flex justify-center py-8" role="status" aria-live="polite">
+            <div className="spinner" aria-hidden="true"></div>
+            <span className="sr-only">Loading collaboration rooms</span>
           </div>
         ) : rooms.length > 0 ? (
-          <div className="space-y-2">
-            {rooms.map((room) => (
-              <div
-                key={room.id}
-                onClick={() => handleJoinRoom(room)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                  selectedRoom?.id === room.id
-                    ? 'bg-primary-100 dark:bg-primary-900 border-2 border-primary-500'
-                    : 'bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border-2 border-transparent'
-                }`}
-              >
-                <div className="font-medium">{room.name}</div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {room.active_users || 0} active users
-                </div>
-              </div>
-            ))}
-          </div>
+          <ul className="space-y-2">
+            {/*
+              Room entries were click-only divs, so joining a room was impossible
+              without a pointer (WCAG 2.1.1). Native buttons in a list fix keyboard
+              access, focus order and role announcement together.
+            */}
+            {rooms.map((room) => {
+              const isSelected = selectedRoom?.id === room.id;
+              const activeUsers = room.active_users || 0;
+              return (
+                <li key={room.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleJoinRoom(room)}
+                    aria-current={isSelected ? 'true' : undefined}
+                    aria-label={`Join ${room.name}, ${activeUsers} active ${
+                      activeUsers === 1 ? 'user' : 'users'
+                    }`}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      isSelected
+                        ? 'bg-primary-100 dark:bg-primary-900 border-2 border-primary-500'
+                        : 'bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border-2 border-transparent'
+                    }`}
+                  >
+                    <span className="font-medium block">{room.name}</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 block">
+                      {activeUsers} active users
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            <FaUsers className="text-4xl mx-auto mb-2 opacity-20" />
+            <FaUsers className="text-4xl mx-auto mb-2 opacity-20" aria-hidden="true" />
             <p>No collaboration rooms</p>
             <button
               onClick={() => setShowCreateModal(true)}

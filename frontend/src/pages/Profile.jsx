@@ -109,10 +109,12 @@ const Profile = () => {
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label htmlFor="profile-full-name" className="block text-sm font-medium mb-2">
                     Full Name
                   </label>
                   <input
+                    id="profile-full-name"
+                    autoComplete="name"
                     type="text"
                     name="full_name"
                     value={profileData.full_name}
@@ -121,10 +123,12 @@ const Profile = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label htmlFor="profile-email" className="block text-sm font-medium mb-2">
                     Email
                   </label>
                   <input
+                    id="profile-email"
+                    autoComplete="email"
                     type="email"
                     name="email"
                     value={profileData.email}
@@ -133,10 +137,12 @@ const Profile = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label htmlFor="profile-phone" className="block text-sm font-medium mb-2">
                     Phone
                   </label>
                   <input
+                    id="profile-phone"
+                    autoComplete="tel"
                     type="tel"
                     name="phone"
                     value={profileData.phone}
@@ -145,10 +151,12 @@ const Profile = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label htmlFor="profile-organization" className="block text-sm font-medium mb-2">
                     Organization
                   </label>
                   <input
+                    id="profile-organization"
+                    autoComplete="organization"
                     type="text"
                     name="organization"
                     value={profileData.organization}
@@ -157,14 +165,22 @@ const Profile = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label htmlFor="profile-role" className="block text-sm font-medium mb-2">
                     Role
                   </label>
+                  {/*
+                    readOnly rather than disabled: a disabled input is skipped by the
+                    tab order and is not reliably announced, so a screen reader user
+                    never learns their own role. readOnly stays focusable and readable
+                    while remaining uneditable.
+                  */}
                   <input
+                    id="profile-role"
                     type="text"
                     value={user?.role || 'N/A'}
                     className="input"
-                    disabled
+                    readOnly
+                    aria-readonly="true"
                   />
                 </div>
               </div>
@@ -217,22 +233,37 @@ const Profile = () => {
               <h2 className="text-xl font-bold mb-4">Change Password</h2>
               <form className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label htmlFor="current-password" className="block text-sm font-medium mb-2">
                     Current Password
                   </label>
-                  <input type="password" className="input" />
+                  <input
+                    id="current-password"
+                    type="password"
+                    autoComplete="current-password"
+                    className="input"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label htmlFor="new-password" className="block text-sm font-medium mb-2">
                     New Password
                   </label>
-                  <input type="password" className="input" />
+                  <input
+                    id="new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    className="input"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label htmlFor="confirm-new-password" className="block text-sm font-medium mb-2">
                     Confirm New Password
                   </label>
-                  <input type="password" className="input" />
+                  <input
+                    id="confirm-new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    className="input"
+                  />
                 </div>
                 <button type="submit" className="btn btn-primary">
                   Update Password
@@ -249,41 +280,107 @@ const Profile = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium">Email Notifications</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {/*
+                    Was a bare <div>, so the toggle beside it had no accessible name at
+                    all. A real <label> binds this text to the checkbox, and the
+                    description is referenced so it is read as well (WCAG 1.3.1, 3.3.2).
+                  */}
+                  <label htmlFor="pref-email-notifications" className="font-medium">
+                    Email Notifications
+                  </label>
+                  <div id="pref-email-notifications-description" className="text-sm text-gray-600 dark:text-gray-400">
                     Receive email alerts for disasters
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                </label>
+                <div className="relative inline-flex items-center">
+                  <input
+                    id="pref-email-notifications"
+                    type="checkbox"
+                    role="switch"
+                    aria-describedby="pref-email-notifications-description"
+                    className="sr-only peer"
+                    defaultChecked
+                  />
+                  {/*
+                    The visible track is decorative; state comes from the checkbox
+                    itself, which stays in the accessibility tree via sr-only rather
+                    than display:none.
+                  */}
+                  <label htmlFor="pref-email-notifications" className="cursor-pointer">
+                    <span className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></span>
+                    <span className="sr-only">Email Notifications</span>
+                  </label>
+                </div>
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium">Push Notifications</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {/*
+                    Was a bare <div>, so the toggle beside it had no accessible name at
+                    all. A real <label> binds this text to the checkbox, and the
+                    description is referenced so it is read as well (WCAG 1.3.1, 3.3.2).
+                  */}
+                  <label htmlFor="pref-push-notifications" className="font-medium">
+                    Push Notifications
+                  </label>
+                  <div id="pref-push-notifications-description" className="text-sm text-gray-600 dark:text-gray-400">
                     Receive browser notifications
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                </label>
+                <div className="relative inline-flex items-center">
+                  <input
+                    id="pref-push-notifications"
+                    type="checkbox"
+                    role="switch"
+                    aria-describedby="pref-push-notifications-description"
+                    className="sr-only peer"
+                    defaultChecked
+                  />
+                  {/*
+                    The visible track is decorative; state comes from the checkbox
+                    itself, which stays in the accessibility tree via sr-only rather
+                    than display:none.
+                  */}
+                  <label htmlFor="pref-push-notifications" className="cursor-pointer">
+                    <span className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></span>
+                    <span className="sr-only">Push Notifications</span>
+                  </label>
+                </div>
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium">Auto-save</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {/*
+                    Was a bare <div>, so the toggle beside it had no accessible name at
+                    all. A real <label> binds this text to the checkbox, and the
+                    description is referenced so it is read as well (WCAG 1.3.1, 3.3.2).
+                  */}
+                  <label htmlFor="pref-auto-save" className="font-medium">
+                    Auto-save
+                  </label>
+                  <div id="pref-auto-save-description" className="text-sm text-gray-600 dark:text-gray-400">
                     Automatically save your work
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                </label>
+                <div className="relative inline-flex items-center">
+                  <input
+                    id="pref-auto-save"
+                    type="checkbox"
+                    role="switch"
+                    aria-describedby="pref-auto-save-description"
+                    className="sr-only peer"
+                    defaultChecked
+                  />
+                  {/*
+                    The visible track is decorative; state comes from the checkbox
+                    itself, which stays in the accessibility tree via sr-only rather
+                    than display:none.
+                  */}
+                  <label htmlFor="pref-auto-save" className="cursor-pointer">
+                    <span className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></span>
+                    <span className="sr-only">Auto-save</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>

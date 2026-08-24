@@ -146,7 +146,15 @@ const Scene = ({ disasters, selectedDisaster, onDisasterClick }) => {
 
 const DisasterViewer3D = ({ disasters = [], selectedDisaster, onDisasterClick }) => {
   return (
-    <div className="w-full h-full bg-gray-900">
+    <div className="w-full h-full bg-gray-900 relative">
+      {/*
+        The canvas is hidden from assistive technology rather than given a label.
+        WebGL exposes no accessibility tree, so its markers cannot be reached or read;
+        labelling it would advertise content that a screen reader user then cannot get
+        at. The equivalent is DisasterDataTable, rendered alongside this view, which is
+        how 1.1.1 Non-text Content is satisfied here.
+      */}
+      <div aria-hidden="true" className="w-full h-full">
       <Canvas
         shadows
         gl={{ antialias: true }}
@@ -161,30 +169,43 @@ const DisasterViewer3D = ({ disasters = [], selectedDisaster, onDisasterClick })
           onDisasterClick={onDisasterClick}
         />
       </Canvas>
+      </div>
 
-      {/* Legend */}
+      {/*
+        The legend sits outside the aria-hidden wrapper: it is ordinary HTML and stays
+        available. Each swatch is decorative because the adjacent text names the level,
+        so severity is never carried by colour alone (1.4.1).
+      */}
       <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
         <h3 className="font-bold mb-3">Severity Levels</h3>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-danger-500"></div>
+            <div className="w-4 h-4 rounded-full bg-danger-500" aria-hidden="true"></div>
             <span className="text-sm">Critical</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-orange-500"></div>
+            <div className="w-4 h-4 rounded-full bg-orange-500" aria-hidden="true"></div>
             <span className="text-sm">High</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
+            <div className="w-4 h-4 rounded-full bg-yellow-500" aria-hidden="true"></div>
             <span className="text-sm">Medium</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-success-500"></div>
+            <div className="w-4 h-4 rounded-full bg-success-500" aria-hidden="true"></div>
             <span className="text-sm">Low</span>
           </div>
         </div>
         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
-          Click markers for details • Drag to rotate • Scroll to zoom
+          <p>Click markers for details • Drag to rotate • Scroll to zoom</p>
+          {/*
+            The line above describes pointer-only gestures. Pointing at the keyboard
+            equivalent keeps 2.1.1 Keyboard from failing silently for anyone who
+            cannot drag.
+          */}
+          <p className="mt-1">
+            Prefer the keyboard? The incident table below the map lists the same data.
+          </p>
         </div>
       </div>
     </div>

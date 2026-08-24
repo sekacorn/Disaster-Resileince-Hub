@@ -82,7 +82,7 @@ const MFASetup = ({ token, onComplete }) => {
             onClick={() => setStep(2)}
             className="btn btn-primary w-full"
           >
-            I've Scanned the Code
+            I&apos;ve Scanned the Code
           </button>
         </div>
       )}

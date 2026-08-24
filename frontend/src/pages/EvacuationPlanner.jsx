@@ -176,12 +176,14 @@ const EvacuationPlanner = () => {
 
           {/* Evacuation Details */}
           <div>
-            <label className="block text-sm font-medium mb-2">
-              <FaUsers className="inline mr-2" />
+            <label htmlFor="evacuees" className="block text-sm font-medium mb-2">
+              <FaUsers className="inline mr-2" aria-hidden="true" />
               Number of Evacuees
             </label>
             <input
+              id="evacuees"
               type="number"
+              min="0"
               name="evacuees"
               placeholder="0"
               value={plannerData.evacuees}
@@ -192,10 +194,11 @@ const EvacuationPlanner = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="vehicle-type" className="block text-sm font-medium mb-2">
               Vehicle Type
             </label>
             <select
+              id="vehicle-type"
               name="vehicleType"
               value={plannerData.vehicleType}
               onChange={handleInputChange}
@@ -209,10 +212,11 @@ const EvacuationPlanner = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="planner-disaster-type" className="block text-sm font-medium mb-2">
               Disaster Type
             </label>
             <select
+              id="planner-disaster-type"
               name="disasterType"
               value={plannerData.disasterType}
               onChange={handleInputChange}
@@ -239,24 +243,36 @@ const EvacuationPlanner = () => {
         <div className="mt-6">
           <h3 className="font-bold mb-3">Saved Routes</h3>
           {routes.length > 0 ? (
-            <div className="space-y-2">
-              {routes.map((route) => (
-                <div
-                  key={route.id}
-                  onClick={() => setSelectedRoute(route)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedRoute?.id === route.id
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
-                  }`}
-                >
-                  <div className="font-medium">{route.name || 'Unnamed Route'}</div>
-                  <div className="text-xs text-gray-500">
-                    {route.distance?.toFixed(1)} km • {route.duration?.toFixed(0)} min
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ul className="space-y-2">
+              {/*
+                Each route was a div with an onClick: unreachable by Tab, not announced
+                as actionable, and unusable by keyboard or switch device (WCAG 2.1.1,
+                4.1.2). A native button in a list restores all of that for free.
+              */}
+              {routes.map((route) => {
+                const isSelected = selectedRoute?.id === route.id;
+                const routeName = route.name || 'Unnamed Route';
+                return (
+                  <li key={route.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRoute(route)}
+                      aria-pressed={isSelected}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                        isSelected
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
+                      }`}
+                    >
+                      <span className="font-medium block">{routeName}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                        {route.distance?.toFixed(1)} km • {route.duration?.toFixed(0)} min
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           ) : (
             <p className="text-sm text-gray-500">No saved routes</p>
           )}

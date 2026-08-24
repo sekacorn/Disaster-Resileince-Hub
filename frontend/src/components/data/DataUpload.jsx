@@ -109,8 +109,17 @@ const DataUpload = () => {
             : 'border-gray-300 dark:border-gray-700 hover:border-primary-400'
         }`}
       >
-        <input {...getInputProps()} />
-        <FaUpload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+        {/*
+          react-dropzone renders a visually hidden file input with no label of its
+          own, so it reached the accessibility tree unnamed. Drag-and-drop is also
+          pointer-only; the input remains keyboard reachable and is what a keyboard
+          or screen reader user actually operates, so it must say what it accepts.
+        */}
+        <input
+          {...getInputProps()}
+          aria-label="Choose disaster data files to upload. Accepts CSV, JSON, Excel and GeoJSON."
+        />
+        <FaUpload className="w-12 h-12 mx-auto mb-4 text-gray-500" aria-hidden="true" />
         {isDragActive ? (
           <p className="text-lg font-medium">Drop files here...</p>
         ) : (

@@ -176,7 +176,16 @@ const ChatInterface = ({ context = {} }) => {
       {/* Input */}
       <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
         <form onSubmit={handleSend} className="flex gap-2">
+          {/*
+            The placeholder was doing the work of a label. It disappears on the first
+            keystroke and is not a reliable accessible name, so the field carries a
+            real label, hidden visually to keep the layout (WCAG 3.3.2).
+          */}
+          <label htmlFor="chat-message" className="sr-only">
+            Your message to the AI assistant
+          </label>
           <input
+            id="chat-message"
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -188,8 +197,9 @@ const ChatInterface = ({ context = {} }) => {
             type="submit"
             disabled={loading || !input.trim()}
             className="btn btn-primary"
+            aria-label="Send message"
           >
-            <FaPaperPlane />
+            <FaPaperPlane aria-hidden="true" />
           </button>
         </form>
       </div>

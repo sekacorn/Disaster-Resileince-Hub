@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import DisasterViewer3D from '@components/visualization/DisasterViewer3D';
+import DisasterDataTable from '@components/visualization/DisasterDataTable';
 import { disasterAPI } from '@services/api';
 import { toast } from 'react-toastify';
 import { FaFilter, FaDownload, FaExpand } from 'react-icons/fa';
@@ -95,10 +96,11 @@ const DisasterMap = () => {
           <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label htmlFor="filter-type" className="block text-sm font-medium mb-2">
                   Disaster Type
                 </label>
                 <select
+                  id="filter-type"
                   value={filters.type}
                   onChange={(e) => setFilters({ ...filters, type: e.target.value })}
                   className="input"
@@ -113,10 +115,11 @@ const DisasterMap = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label htmlFor="filter-severity" className="block text-sm font-medium mb-2">
                   Severity
                 </label>
                 <select
+                  id="filter-severity"
                   value={filters.severity}
                   onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
                   className="input"
@@ -129,10 +132,11 @@ const DisasterMap = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label htmlFor="filter-date-range" className="block text-sm font-medium mb-2">
                   Date Range
                 </label>
                 <select
+                  id="filter-date-range"
                   value={filters.dateRange}
                   onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
                   className="input"
@@ -151,8 +155,9 @@ const DisasterMap = () => {
       {/* 3D Viewer */}
       <div className="flex-1 relative">
         {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="spinner"></div>
+          <div className="flex items-center justify-center h-full" role="status" aria-live="polite">
+            <div className="spinner" aria-hidden="true"></div>
+            <span className="sr-only">Loading disaster data</span>
           </div>
         ) : (
           <DisasterViewer3D
@@ -163,29 +168,61 @@ const DisasterMap = () => {
         )}
       </div>
 
+      {/*
+        The accessible equivalent of the 3D scene above. Rendered for everyone, not
+        gated behind a "accessible version" toggle: a separate-but-equal page is
+        harder to keep in sync and signals that access is an afterthought.
+      */}
+      {!loading && (
+        <div className="p-4">
+          <DisasterDataTable
+            disasters={disasters}
+            selectedDisaster={selectedDisaster}
+            onDisasterClick={handleDisasterClick}
+          />
+        </div>
+      )}
+
       {/* Details Panel */}
       {selectedDisaster && (
-        <div className="absolute right-4 top-24 w-80 max-h-[calc(100vh-200px)] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 animate-slide-in-right">
+        <section
+          className="absolute right-4 top-24 w-80 max-h-[calc(100vh-200px)] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 animate-slide-in-right"
+          /* <section> with an accessible name is already a region landmark. */
+          aria-labelledby="disaster-details-heading"
+          /* Appears in response to a user action, so announce it (WCAG 4.1.3). */
+          aria-live="polite"
+        >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold">Disaster Details</h3>
+            <h3 id="disaster-details-heading" className="text-lg font-bold">
+              Disaster Details
+            </h3>
             <button
+              type="button"
               onClick={() => setSelectedDisaster(null)}
-              className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              /* The glyph is announced as "multiplication x" without this. */
+              aria-label="Close disaster details"
             >
-              ✕
+              <span aria-hidden="true">✕</span>
             </button>
           </div>
-          <div className="space-y-3">
+          {/*
+            Was a list of <label> elements with nothing to label, which is invalid and
+            announces as an orphaned form control. A description list is the correct
+            structure for name/value pairs (WCAG 1.3.1).
+          */}
+          <dl className="space-y-3">
             <div>
-              <label className="text-sm text-gray-600 dark:text-gray-400">Name</label>
-              <p className="font-medium">{selectedDisaster.name}</p>
+              <dt className="text-sm text-gray-600 dark:text-gray-400">Name</dt>
+              <dd><p className="font-medium">{selectedDisaster.name}</p></dd>
             </div>
             <div>
-              <label className="text-sm text-gray-600 dark:text-gray-400">Type</label>
-              <p className="font-medium capitalize">{selectedDisaster.type}</p>
+              <dt className="text-sm text-gray-600 dark:text-gray-400">Type</dt>
+              <dd><p className="font-medium capitalize">{selectedDisaster.type}</p></dd>
             </div>
             <div>
-              <label className="text-sm text-gray-600 dark:text-gray-400">Severity</label>
+              <dt className="text-sm text-gray-600 dark:text-gray-400">Severity</dt>
+              <dd>
               <span className={`badge ${
                 selectedDisaster.severity === 'critical' ? 'badge-danger' :
                 selectedDisaster.severity === 'high' ? 'badge-warning' :
@@ -193,31 +230,32 @@ const DisasterMap = () => {
               }`}>
                 {selectedDisaster.severity}
               </span>
+              </dd>
             </div>
             <div>
-              <label className="text-sm text-gray-600 dark:text-gray-400">Location</label>
-              <p className="font-medium">{selectedDisaster.location}</p>
+              <dt className="text-sm text-gray-600 dark:text-gray-400">Location</dt>
+              <dd><p className="font-medium">{selectedDisaster.location}</p></dd>
             </div>
             <div>
-              <label className="text-sm text-gray-600 dark:text-gray-400">Coordinates</label>
-              <p className="text-sm font-mono">
+              <dt className="text-sm text-gray-600 dark:text-gray-400">Coordinates</dt>
+              <dd className="text-sm font-mono">
                 {selectedDisaster.latitude?.toFixed(4)}, {selectedDisaster.longitude?.toFixed(4)}
-              </p>
+              </dd>
             </div>
             {selectedDisaster.description && (
               <div>
-                <label className="text-sm text-gray-600 dark:text-gray-400">Description</label>
-                <p className="text-sm">{selectedDisaster.description}</p>
+                <dt className="text-sm text-gray-600 dark:text-gray-400">Description</dt>
+                <dd className="text-sm">{selectedDisaster.description}</dd>
               </div>
             )}
             <div>
-              <label className="text-sm text-gray-600 dark:text-gray-400">Date</label>
-              <p className="text-sm">
+              <dt className="text-sm text-gray-600 dark:text-gray-400">Date</dt>
+              <dd className="text-sm">
                 {new Date(selectedDisaster.created_at).toLocaleString()}
-              </p>
+              </dd>
             </div>
-          </div>
-        </div>
+          </dl>
+        </section>
       )}
     </div>
   );
