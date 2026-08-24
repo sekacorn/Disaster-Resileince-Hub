@@ -244,3 +244,9 @@ services:
   ai-model:
     host: ${AI_MODEL_HOST:ai-model}
     port: ${AI_MODEL_PORT:8000}
+
+# Data protection controls applied to gateway logs.
+privacy:
+  # Salt for pseudonymising user identifiers written to application logs.
+  # Generate with: openssl rand -base64 32
+  log-pseudonym-salt: ${PRIVACY_LOG_PSEUDONYM_SALT:}

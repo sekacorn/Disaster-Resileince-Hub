@@ -195,3 +195,12 @@ logging:
 server:
   compression:
     enabled: true
+
+# Audit trail (NIST SP 800-53 AU family).
+audit:
+  # Salt for pseudonymising the actor on each audit record. Without it the hash of a
+  # username is reversible by dictionary attack and the pseudonym is worthless.
+  # Must stay stable for the life of the trail: changing it breaks correlation
+  # between records written before and after the change.
+  # Generate with: openssl rand -base64 32
+  pseudonym-salt: ${AUDIT_PSEUDONYM_SALT:}
