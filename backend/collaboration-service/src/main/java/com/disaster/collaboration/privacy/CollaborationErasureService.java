@@ -104,7 +104,10 @@ public class CollaborationErasureService {
             // Detached from the session first so the cascade cannot reach further than
             // intended when the owning session is flushed.
             participations.forEach(participant -> {
-                participant.setUserName(null);
+                // userName is declared NOT NULL, so it is overwritten rather than
+                // nulled; the row is deleted immediately afterwards either way. The
+                // nullable fields are cleared outright.
+                participant.setUserName(ERASED_DISPLAY_NAME);
                 participant.setUserEmail(null);
                 participant.setMbtiType(null);
                 participant.setCursorPosition(null);
@@ -146,14 +149,19 @@ public class CollaborationErasureService {
         }
 
         // --- Owned sessions: ownership reassigned, never deleted ---
-        List<CollaborationSession> ownedSessions = sessionRepository.findByOwnerId(userId);
-        if (!ownedSessions.isEmpty()) {
-            ownedSessions.forEach(session -> {
-                session.setOwnerId(ERASED_USER_MARKER);
-                session.setOwnerName(ERASED_DISPLAY_NAME);
-            });
-            sessionRepository.saveAll(ownedSessions);
-            anonymised.add("OWNED_SESSIONS(" + ownedSessions.size() + ")");
+        //
+        // A bulk UPDATE, not a load-mutate-save. Saving the entity merges its
+        // participants and annotations collections, and because both cascade ALL with
+        // orphanRemoval, Hibernate deletes any row missing from them -- which during an
+        // erasure wiped out every annotation in the session, other people's included.
+        // A targeted UPDATE rather than load-mutate-save. Only two scalar columns
+        // change, and this way the session entity -- whose participants and annotations
+        // collections cascade ALL with orphanRemoval -- is never brought into the
+        // persistence context during an erasure at all.
+        int reassigned = sessionRepository.reassignOwnership(
+                userId, ERASED_USER_MARKER, ERASED_DISPLAY_NAME);
+        if (reassigned > 0) {
+            anonymised.add("OWNED_SESSIONS(" + reassigned + ")");
         }
 
         log.info("Collaboration erasure completed: {} categories erased, {} anonymised",

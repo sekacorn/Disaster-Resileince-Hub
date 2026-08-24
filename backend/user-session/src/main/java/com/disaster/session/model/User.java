@@ -140,7 +140,13 @@ public class User {
     /**
      * Encrypted backup codes for account recovery
      */
-    @Column(name = "mfa_backup_codes", columnDefinition = "text[]")
+    /*
+     * No columnDefinition: Hibernate 6 maps String[] to the dialect's own array type,
+     * and pinning "text[]" here made it emit the malformed "text[*][]". Leaving the
+     * dialect to decide keeps the entity portable and still validates against the
+     * TEXT[] column declared in database/postgres/schema.sql.
+     */
+    @Column(name = "mfa_backup_codes")
     private String[] mfaBackupCodes;
 
     // Account status

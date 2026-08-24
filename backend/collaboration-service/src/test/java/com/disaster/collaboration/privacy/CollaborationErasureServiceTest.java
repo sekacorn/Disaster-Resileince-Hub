@@ -51,7 +51,8 @@ class CollaborationErasureServiceTest {
         lenient().when(participantRepository.findByUserId(USER_ID)).thenReturn(List.of());
         lenient().when(annotationRepository.findByCreatedBy(USER_ID)).thenReturn(List.of());
         lenient().when(annotationRepository.findAll()).thenReturn(List.of());
-        lenient().when(sessionRepository.findByOwnerId(USER_ID)).thenReturn(List.of());
+        lenient().when(sessionRepository.reassignOwnership(anyString(), anyString(), anyString()))
+                .thenReturn(0);
     }
 
     @Test
@@ -75,7 +76,9 @@ class CollaborationErasureServiceTest {
 
         // Deleting a row frees its space without overwriting it. Blanking first means
         // nothing usable survives in a page that has not yet been reused.
-        assertNull(participant.getUserName());
+        // userName is NOT NULL in the schema, so it is overwritten rather than nulled.
+        assertEquals(CollaborationErasureService.ERASED_DISPLAY_NAME, participant.getUserName());
+        assertNotEquals("Alice", participant.getUserName());
         assertNull(participant.getUserEmail());
         assertNull(participant.getMbtiType());
         assertNull(participant.getCursorPosition());
@@ -123,24 +126,31 @@ class CollaborationErasureServiceTest {
     }
 
     @Test
-    @DisplayName("Owned sessions are reassigned, never deleted")
-    void ownedSessionsAreNeverDeleted() {
-        CollaborationSession session = CollaborationSession.builder()
-                .id("session-1")
-                .title("Ridge Fire Operations")
-                .ownerId(USER_ID)
-                .ownerName("Alice")
-                .build();
-        when(sessionRepository.findByOwnerId(USER_ID)).thenReturn(List.of(session));
+    @DisplayName("Owned sessions are reassigned by bulk update, never deleted or merged")
+    void ownedSessionsAreReassignedNotDeleted() {
+        when(sessionRepository.reassignOwnership(
+                USER_ID,
+                CollaborationErasureService.ERASED_USER_MARKER,
+                CollaborationErasureService.ERASED_DISPLAY_NAME)).thenReturn(1);
 
-        service.eraseCollaborationData(USER_ID, false);
+        var outcome = service.eraseCollaborationData(USER_ID, false);
 
-        // CollaborationSession cascades ALL with orphanRemoval, so deleting one would
-        // destroy every other participant's annotations inside it.
+        verify(sessionRepository).reassignOwnership(
+                USER_ID,
+                CollaborationErasureService.ERASED_USER_MARKER,
+                CollaborationErasureService.ERASED_DISPLAY_NAME);
+
+        // CollaborationSession cascades ALL with orphanRemoval over participants and
+        // annotations. Deleting a session would destroy other people's work in it, and
+        // so would save(), which merges those collections and orphan-removes whatever
+        // is missing from them. Neither may be called.
         verify(sessionRepository, never()).deleteAll(any());
         verify(sessionRepository, never()).delete(any());
-        assertEquals(CollaborationErasureService.ERASED_USER_MARKER, session.getOwnerId());
-        assertEquals(CollaborationErasureService.ERASED_DISPLAY_NAME, session.getOwnerName());
+        verify(sessionRepository, never()).saveAll(any());
+        verify(sessionRepository, never()).save(any());
+
+        assertTrue(outcome.categoriesAnonymised().stream()
+                .anyMatch(c -> c.startsWith("OWNED_SESSIONS")));
     }
 
     @Test
@@ -184,7 +194,6 @@ class CollaborationErasureServiceTest {
         when(annotationRepository.findByCreatedBy("other-user")).thenReturn(List.of(theirs));
         when(participantRepository.findByUserId("other-user")).thenReturn(List.of());
         when(annotationRepository.findAll()).thenReturn(List.of());
-        when(sessionRepository.findByOwnerId("other-user")).thenReturn(List.of());
         service.eraseCollaborationData("other-user", false);
 
         // A stable per-person pseudonym would still let anyone cluster a departed

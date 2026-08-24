@@ -112,8 +112,15 @@ class AccountErasureServiceTest {
 
         service.eraseAccount(USERNAME, null);
 
-        assertNull(session.getSessionToken());
-        assertNull(session.getRefreshToken());
+        // sessionToken is @NotBlank and unique, so it is overwritten with a unique
+        // placeholder rather than nulled. What matters is that the real bearer
+        // credential is no longer present in the row.
+        assertNotEquals("live-access-token", session.getSessionToken());
+        assertNotEquals("live-refresh-token", session.getRefreshToken());
+        assertTrue(session.getSessionToken().startsWith("erased-"));
+        assertTrue(session.getRefreshToken().startsWith("erased-"));
+        assertNotEquals(session.getSessionToken(), session.getRefreshToken(),
+                "Placeholders must be unique per column to respect the unique constraint");
         assertNull(session.getIpAddress());
         verify(sessionRepository).deleteAll(List.of(session));
     }

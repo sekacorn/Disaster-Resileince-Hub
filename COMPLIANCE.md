@@ -202,6 +202,40 @@ icon-only button has no accessible name.
 
 ---
 
+## End-to-end verification
+
+Beyond the unit tests, each service has an end-to-end suite that drives real HTTP
+requests against a real application context and a real database (H2), then inspects
+what physically landed in the tables.
+
+| Suite | Covers |
+|---|---|
+| `disaster-integrator` `PrivacyEndToEndTest` (9) | Health data posted over HTTP lands as ciphertext — asserted with **raw SQL**, since reading through JPA would decrypt it and prove nothing — and comes back readable through the API. Consent grant/withdraw/history. Export, erasure, and the consent trail surviving it. |
+| `user-session` `PrivacyEndToEndTest` (12) | Registration, failed and successful sign-in, all audited. Export containing no credential. Erasure removing account and sessions. The audit chain still verifying afterwards, and detecting a row edited directly in SQL. |
+| `collaboration-service` `PrivacyEndToEndTest` (6) | Privacy routes rejecting anonymous callers while the rest of the service stays open. Export scoped to the caller. Erasure leaving the shared incident record and other participants untouched. |
+
+These found four defects the unit tests could not, because mocked repositories do not
+enforce constraints, run transactions, or round-trip through a database:
+
+1. **Failed sign-ins were never actually audited.** `recordFailure()` called `record()`
+   on itself, so Spring's proxy never applied and the `REQUIRES_NEW` was skipped. The
+   audit row joined the login transaction and was rolled back when the login failed —
+   losing precisely the events the trail exists to capture. Every public entry point now
+   carries its own propagation.
+2. **The audit chain reported tampering on an untouched trail.** `Instant.now()` carries
+   nanoseconds; the column is `timestamp(6)`. The hash was computed over a value the
+   database then rounded, so every record failed verification after a round trip.
+   Timestamps are now truncated to microseconds before hashing.
+3. **Account erasure crashed on a NOT NULL constraint.** Blanking `sessionToken` to null
+   violated `@NotBlank`; it is now overwritten with a unique placeholder, which achieves
+   the same thing — the real credential is gone — without breaking validation.
+4. **Collaboration erasure crashed the same way** on `SessionParticipant.userName`.
+
+Two environment fixes were needed to make the suites runnable without Docker: an
+`azure` OAuth2 client declared with no provider prevented `user-session`'s context from
+starting at all, and `columnDefinition = "text[]"` on `User.mfaBackupCodes` made
+Hibernate 6 emit malformed `text[*][]` DDL.
+
 ## Verification
 
 ```bash
@@ -226,7 +260,10 @@ all nine routes.
 **Pre-existing test failures**, present on the baseline before this work and unrelated
 to it: two in `disaster-integrator`'s `DataValidatorTest` (a `@Builder.Default` bug in
 `EnvironmentalData`), and fourteen in `user-session` (`AuthControllerTest`,
-`JwtServiceTest`, `UserSessionIntegrationTest`).
+`JwtServiceTest`, `UserSessionIntegrationTest`). The fourteen all fail for the same
+reason — they expect a PostgreSQL server on `localhost:5432`, and `UserSessionIntegrationTest`
+additionally requires Docker for Testcontainers. They would pass in an environment that
+has both. The new end-to-end suites deliberately use H2 so they do not.
 
 ---
 

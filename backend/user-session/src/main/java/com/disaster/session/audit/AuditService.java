@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HexFormat;
@@ -54,41 +55,65 @@ public class AuditService {
         this.pseudonymSalt = pseudonymSalt == null ? "" : pseudonymSalt;
     }
 
+    /*
+     * Each public entry point carries its own REQUIRES_NEW rather than delegating to an
+     * annotated sibling.
+     *
+     * Spring's transaction advice lives in a proxy around the bean, so a call from one
+     * method of this class to another never passes through it. Annotating only record()
+     * and having these delegate to it meant the new transaction was silently skipped:
+     * the audit row joined the caller's transaction and was rolled back with it, so a
+     * failed sign-in -- the exact case the trail exists to capture -- left no record.
+     */
+
     /** Records a successful action. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public AuditEvent recordSuccess(AuditEventType type, String actor, String resource,
                                     String sourceAddress, String detail) {
-        return record(type, SUCCESS, actor, resource, sourceAddress, detail);
+        return append(type, SUCCESS, actor, resource, sourceAddress, detail);
     }
 
     /** Records an attempt that failed. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public AuditEvent recordFailure(AuditEventType type, String actor, String resource,
                                     String sourceAddress, String detail) {
-        return record(type, FAILURE, actor, resource, sourceAddress, detail);
+        return append(type, FAILURE, actor, resource, sourceAddress, detail);
     }
 
     /** Records an access control refusal. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public AuditEvent recordDenied(AuditEventType type, String actor, String resource,
                                    String sourceAddress, String detail) {
-        return record(type, DENIED, actor, resource, sourceAddress, detail);
+        return append(type, DENIED, actor, resource, sourceAddress, detail);
+    }
+
+    /**
+     * Records an event with an explicit outcome string.
+     *
+     * <p>Runs in its own transaction ({@code REQUIRES_NEW}) so the record survives when
+     * the surrounding business transaction rolls back. A failed action that leaves no
+     * trace is precisely the case an audit trail exists to capture.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public AuditEvent record(AuditEventType type, String outcome, String actor,
+                             String resource, String sourceAddress, String detail) {
+        return append(type, outcome, actor, resource, sourceAddress, detail);
     }
 
     /**
      * Appends one record to the chain.
-     *
-     * <p>Runs in its own transaction ({@code REQUIRES_NEW}) so that the audit record
-     * survives when the surrounding business transaction rolls back. A failed action
-     * that leaves no trace is precisely the case an audit trail exists to capture --
-     * rolling the record back with the operation would lose every failed attempt.
      *
      * <p>Synchronised because the chain is only meaningful if records are appended one
      * at a time: two concurrent writers reading the same predecessor would produce two
      * records claiming the same position. This serialises appends within one instance;
      * a multi-instance deployment needs a database-level lock or a single writer, which
      * is noted here rather than pretended away.
+     *
+     * <p>Private, so it always runs inside the REQUIRES_NEW transaction opened by
+     * whichever public method the caller entered through.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public synchronized AuditEvent record(AuditEventType type, String outcome, String actor,
-                                          String resource, String sourceAddress, String detail) {
+    private synchronized AuditEvent append(AuditEventType type, String outcome, String actor,
+                                           String resource, String sourceAddress, String detail) {
         Optional<AuditEvent> previous = repository.findFirstByOrderBySequenceNumberDesc();
         String previousHash = previous.map(AuditEvent::getEntryHash).orElse(GENESIS_HASH);
         long sequenceNumber = previous.map(AuditEvent::getSequenceNumber).orElse(0L) + 1;
@@ -103,7 +128,7 @@ public class AuditService {
                 .resource(resource)
                 .sourceAddress(truncateAddress(sourceAddress))
                 .detail(truncate(detail))
-                .occurredAt(Instant.now())
+                .occurredAt(nowAtStorablePrecision())
                 .previousHash(previousHash)
                 .build();
 
@@ -160,6 +185,20 @@ public class AuditService {
         }
 
         return new IntegrityReport(problems.isEmpty(), chain.size(), problems);
+    }
+
+    /**
+     * The current instant, truncated to the precision the database actually stores.
+     *
+     * <p>{@code Instant.now()} carries nanoseconds, but the generated column is
+     * {@code timestamp(6)} -- microseconds. Hashing the untruncated value meant the
+     * hash was computed over a timestamp the database then rounded, so every record
+     * failed verification after a round trip and the integrity check reported tampering
+     * on a chain nobody had touched. Truncating first makes what is hashed identical to
+     * what is stored.
+     */
+    private Instant nowAtStorablePrecision() {
+        return Instant.now().truncatedTo(ChronoUnit.MICROS);
     }
 
     /**

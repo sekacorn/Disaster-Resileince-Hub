@@ -2,6 +2,7 @@ package com.disaster.collaboration.repository;
 
 import com.disaster.collaboration.model.CollaborationSession;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -40,6 +41,23 @@ public interface SessionRepository extends JpaRepository<CollaborationSession, S
 
     @Query("SELECT s FROM CollaborationSession s WHERE s.type = :type AND s.status = 'ACTIVE'")
     List<CollaborationSession> findActiveByType(@Param("type") CollaborationSession.SessionType type);
+
+    /**
+     * Reassigns ownership of every session owned by one person, without loading the
+     * entity.
+     *
+     * <p>Deliberately a bulk update rather than a load-mutate-save. Only the two owner
+     * columns change, and CollaborationSession cascades ALL with orphanRemoval over its
+     * participants and annotations -- so keeping the entity out of the persistence
+     * context entirely removes any chance of an erasure disturbing other people's rows
+     * in a session it never needed to load.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE CollaborationSession s SET s.ownerId = :marker, s.ownerName = :displayName "
+            + "WHERE s.ownerId = :ownerId")
+    int reassignOwnership(@Param("ownerId") String ownerId,
+                          @Param("marker") String marker,
+                          @Param("displayName") String displayName);
 
     Optional<CollaborationSession> findByIdAndOwnerId(String id, String ownerId);
 

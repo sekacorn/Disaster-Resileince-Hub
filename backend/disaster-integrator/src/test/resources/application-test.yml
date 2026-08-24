@@ -37,3 +37,12 @@ data:
     min-temperature: -90.0
     max-magnitude: 10.0
     min-magnitude: 0.0
+
+# Fixed key so the end-to-end test is deterministic: ciphertext written in one test
+# method must still decrypt in the next. An unset key generates a fresh one per boot.
+privacy:
+  encryption:
+    key: ZHJoLXRlc3Qtb25seS1rZXktMzItYnl0ZXMtbG9uZyE=
+  retention:
+    location-history-days: 90
+    cron: "0 0 3 * * *"

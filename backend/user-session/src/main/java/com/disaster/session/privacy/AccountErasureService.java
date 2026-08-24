@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Carries out GDPR Art. 17 erasure of an account.
@@ -85,8 +86,12 @@ public class AccountErasureService {
             // reusable; it does not overwrite it, and a token recovered from a page
             // that has not yet been reused is still a working credential.
             sessions.forEach(session -> {
-                session.setSessionToken(null);
-                session.setRefreshToken(null);
+                // Overwritten with a unique placeholder rather than nulled: sessionToken
+                // is @NotBlank and unique, so null fails bean validation on flush and a
+                // shared constant collides across rows. The point is that the real
+                // credential no longer exists in the page, which this achieves either way.
+                session.setSessionToken("erased-" + UUID.randomUUID());
+                session.setRefreshToken("erased-" + UUID.randomUUID());
                 session.setIpAddress(null);
                 session.setUserAgent(null);
                 session.setIsActive(false);

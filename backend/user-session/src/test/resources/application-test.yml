@@ -1,0 +1,54 @@
+# Test profile: H2 in PostgreSQL compatibility mode, so the entity mappings that use
+# Postgres-specific column types (text[], jsonb) still generate valid DDL.
+spring:
+  application:
+    name: user-session-service
+
+  datasource:
+    url: jdbc:h2:mem:usersessiontest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # Redis is not reachable in the test environment. Nothing in the authentication or
+  # privacy paths reads from it, and the template bean connects lazily, so the context
+  # starts without a server. Auto-configuring the health check would fail the context,
+  # so it is excluded.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.data.redis.RedisHealthContributorAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.data.redis.RedisReactiveHealthContributorAutoConfiguration
+      # The main config declares an 'azure' OAuth2 client with no provider, which fails
+      # context startup. SSO is not part of what these tests exercise.
+      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
+
+security:
+  jwt:
+    # JwtService decodes this with Decoders.BASE64, so it must be valid base64.
+    secret: ZHJoLXVzZXItc2Vzc2lvbi10ZXN0LXNlY3JldC1rZXktNjQtYnl0ZXMtbG9uZy1mb3ItaHM1MTItYWxnISE=
+    expiration: 86400000
+    refresh-expiration: 604800000
+
+jwt:
+  secret: ZHJoLXVzZXItc2Vzc2lvbi10ZXN0LXNlY3JldC1rZXktNjQtYnl0ZXMtbG9uZy1mb3ItaHM1MTItYWxnISE=
+
+auth:
+  max-failed-attempts: 5
+  lock-duration-minutes: 30
+
+# Fixed salt so audit pseudonyms are stable across the steps of one end-to-end run.
+audit:
+  pseudonym-salt: dGVzdC1hdWRpdC1zYWx0LWZvci1lMmU=
+
+logging:
+  level:
+    com.disaster.session: INFO
+    org.hibernate.SQL: WARN

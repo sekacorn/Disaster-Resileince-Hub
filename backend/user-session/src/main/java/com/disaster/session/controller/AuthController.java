@@ -48,7 +48,7 @@ public class AuthController {
             @Valid @RequestBody LoginRequest loginRequest,
             HttpServletRequest request
     ) {
-        log.info("Login attempt for: {}", loginRequest.getUsernameOrEmail());
+        log.info("Login attempt received");
         LoginResponse response = authService.login(loginRequest, request);
         return ResponseEntity.ok(response);
     }

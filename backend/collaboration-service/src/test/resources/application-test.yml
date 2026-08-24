@@ -1,0 +1,40 @@
+# Test profile: H2 in place of PostgreSQL, and no Redis server.
+spring:
+  application:
+    name: collaboration-service
+
+  datasource:
+    url: jdbc:h2:mem:collabtest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # Redis is not reachable here. PresenceService's RedisTemplate is replaced with a
+  # mock in the test, and the Redis-backed HTTP session store is switched off so the
+  # context does not try to connect during startup.
+  session:
+    store-type: none
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.session.SessionAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.data.redis.RedisHealthContributorAutoConfiguration
+      # Redis key-value repositories build an adapter eagerly and fail without a
+      # connection factory. Nothing in the privacy paths uses them.
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+# Valid base64 so the JWT filter can build a signing key from it.
+jwt:
+  secret: ZHJoLWNvbGxhYm9yYXRpb24tdGVzdC1zZWNyZXQta2V5LTMyLWJ5dGVzIQ==
+
+logging:
+  level:
+    com.disaster.collaboration: INFO
