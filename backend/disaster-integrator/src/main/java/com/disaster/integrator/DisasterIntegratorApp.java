@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Disaster Integrator Microservice Application
@@ -25,6 +26,9 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication
 @EnableJpaAuditing
 @EnableAsync
+// Required for RetentionPolicyService: without it the @Scheduled sweep never
+// runs and the stated retention period is not actually enforced.
+@EnableScheduling
 public class DisasterIntegratorApp {
 
     public static void main(String[] args) {

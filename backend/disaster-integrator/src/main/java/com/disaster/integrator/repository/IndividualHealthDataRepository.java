@@ -79,11 +79,6 @@ public interface IndividualHealthDataRepository extends JpaRepository<Individual
     List<IndividualHealthData> findPatientsWithSpecialNeeds();
 
     /**
-     * Find patients by blood type
-     */
-    List<IndividualHealthData> findByBloodType(String bloodType);
-
-    /**
      * Find patients with consent given
      */
     List<IndividualHealthData> findByConsentGivenTrue();

@@ -152,7 +152,15 @@ public class HealthDataService {
      * Find patients by blood type
      */
     public List<IndividualHealthData> findByBloodType(String bloodType) {
-        return repository.findByBloodType(bloodType);
+        if (bloodType == null) {
+            return List.of();
+        }
+        // Blood type is special category data and is stored encrypted with a random
+        // IV, so equal values do not produce equal ciphertext and SQL cannot match on
+        // it. Decryption happens on read, so the filter runs in Java instead.
+        return repository.findAll().stream()
+                .filter(record -> bloodType.equalsIgnoreCase(record.getBloodType()))
+                .toList();
     }
 
     /**

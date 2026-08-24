@@ -3,9 +3,12 @@ package com.disaster.integrator.controller;
 import com.disaster.integrator.model.CommunityData;
 import com.disaster.integrator.model.EnvironmentalData;
 import com.disaster.integrator.model.IndividualHealthData;
+import com.disaster.integrator.privacy.consent.ConsentService;
+import com.disaster.integrator.privacy.consent.ProcessingPurpose;
 import com.disaster.integrator.service.CommunityDataService;
 import com.disaster.integrator.service.EnvironmentalDataService;
 import com.disaster.integrator.service.HealthDataService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +33,7 @@ public class DataIntegrationController {
     private final EnvironmentalDataService environmentalDataService;
     private final CommunityDataService communityDataService;
     private final HealthDataService healthDataService;
+    private final ConsentService consentService;
 
     // ==================== Environmental Data Endpoints ====================
 
@@ -490,15 +494,33 @@ public class DataIntegrationController {
     }
 
     /**
-     * Update consent
+     * Updates the legacy single-flag consent on the health record.
+     *
+     * @deprecated A single boolean cannot express consent that is specific to a purpose,
+     *     as GDPR Art. 6(1)(a) requires, and overwriting it destroys the evidence trail
+     *     Art. 7(1) depends on. Use {@code PUT /privacy/consent/{purpose}} instead.
+     *     <p>Retained so existing clients keep working. It now also writes a purpose-scoped
+     *     record for {@code EMERGENCY_HEALTH_RESPONSE}, so the two views cannot drift apart
+     *     while callers migrate.
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     @PutMapping("/health/consent")
     public ResponseEntity<?> updateConsent(
             @RequestParam boolean consentGiven,
-            Authentication authentication) {
+            Authentication authentication,
+            HttpServletRequest request) {
         try {
             String userId = authentication.getName();
             IndividualHealthData updated = healthDataService.updateConsent(userId, consentGiven);
+
+            String sourceAddress = request.getRemoteAddr();
+            if (consentGiven) {
+                consentService.grant(userId, ProcessingPurpose.EMERGENCY_HEALTH_RESPONSE,
+                        "LEGACY_HEALTH_CONSENT_ENDPOINT", sourceAddress);
+            } else {
+                consentService.withdraw(userId, ProcessingPurpose.EMERGENCY_HEALTH_RESPONSE,
+                        "LEGACY_HEALTH_CONSENT_ENDPOINT", sourceAddress);
+            }
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();

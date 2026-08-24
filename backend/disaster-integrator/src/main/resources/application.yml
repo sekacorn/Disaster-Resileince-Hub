@@ -89,3 +89,18 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+
+# Privacy and data protection controls.
+privacy:
+  encryption:
+    # Base64-encoded 32-byte AES-256 key protecting special category data at rest.
+    # Generate with: openssl rand -base64 32
+    # Supply from a secret manager in any real deployment. Left unset, the service
+    # generates an ephemeral key at startup and logs a warning; encrypted data will
+    # then not survive a restart.
+    key: ${PRIVACY_ENCRYPTION_KEY:}
+  retention:
+    # Days of inactive location history kept before the nightly sweep deletes it.
+    location-history-days: ${PRIVACY_LOCATION_RETENTION_DAYS:90}
+    # Nightly at 03:00.
+    cron: "0 0 3 * * *"
