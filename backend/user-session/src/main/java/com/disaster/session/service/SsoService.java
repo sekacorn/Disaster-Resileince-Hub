@@ -166,7 +166,7 @@ public class SsoService {
             user = userRepository.save(user);
         }
 
-        log.info("SSO authentication successful for user: {} via provider: {}", user.getUsername(), providerName);
+        log.info("SSO authentication successful via provider: {}", providerName);
 
         return user;
     }
@@ -210,7 +210,7 @@ public class SsoService {
                 .build();
 
         user = userRepository.save(user);
-        log.info("User auto-provisioned from SSO: {}", user.getUsername());
+        log.info("User auto-provisioned from SSO");
 
         return user;
     }

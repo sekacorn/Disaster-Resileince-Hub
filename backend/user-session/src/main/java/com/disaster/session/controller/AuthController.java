@@ -61,7 +61,7 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ResponseEntity<UserDto> register(@Valid @RequestBody RegisterRequest registerRequest) {
-        log.info("Registration attempt for: {}", registerRequest.getUsername());
+        log.info("Registration attempt received");
         UserDto user = authService.register(registerRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }

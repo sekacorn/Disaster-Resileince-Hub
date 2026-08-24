@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { getAccessToken } from './tokenStorage';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:8000';
 
@@ -15,7 +16,7 @@ class WebSocketService {
 
     this.socket = io(WS_URL, {
       auth: {
-        token: token || localStorage.getItem('token'),
+        token: token || getAccessToken(),
       },
       transports: ['websocket', 'polling'],
       reconnection: true,

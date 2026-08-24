@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { getAccessToken, clearAccessToken } from './tokenStorage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
@@ -143,7 +144,7 @@ const api = axios.create({
 // Request interceptor to add JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -162,7 +163,7 @@ api.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           // Unauthorized - token expired or invalid
-          localStorage.removeItem('token');
+          clearAccessToken();
           window.location.href = '/login';
           toast.error('Session expired. Please login again.');
           break;

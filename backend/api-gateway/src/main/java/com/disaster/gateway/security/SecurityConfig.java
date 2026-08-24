@@ -54,13 +54,52 @@ public class SecurityConfig {
                         .anyExchange().authenticated()
                 )
 
-                // Security headers
+                /*
+                 * Response security headers.
+                 *
+                 * NIST SP 800-53 SC-8 (transmission confidentiality), SC-18 (mobile
+                 * code) and SI-10. Spring already sets nosniff and no-cache defaults;
+                 * what follows is what it does not set on its own.
+                 */
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.mode(Mode.DENY))
                         .contentSecurityPolicy(csp -> csp
                                 .policyDirectives("default-src 'self'; " +
                                         "frame-ancestors 'none'; " +
+                                        "base-uri 'self'; " +
+                                        // Stops a compromised page posting stolen data
+                                        // to an attacker-controlled endpoint.
+                                        "form-action 'self'; " +
+                                        "object-src 'none'; " +
                                         "upgrade-insecure-requests"))
+
+                        // SC-8(1): tells browsers never to reach this origin over
+                        // plaintext again, closing the first-request downgrade window.
+                        .hsts(hsts -> hsts
+                                .includeSubdomains(true)
+                                .maxAge(java.time.Duration.ofDays(365)))
+
+                        /*
+                         * Referrer-Policy: a URL can carry an incident id or a record
+                         * reference, and the default policy leaks the full URL to any
+                         * same-protocol third party the user navigates to.
+                         */
+                        .referrerPolicy(referrer -> referrer.policy(
+                                org.springframework.security.web.server.header
+                                        .ReferrerPolicyServerHttpHeadersWriter
+                                        .ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+
+                        /*
+                         * Permissions-Policy: this is an API gateway, so no response it
+                         * serves has any business using these capabilities. Denying them
+                         * limits what injected script could reach for.
+                         */
+                        .writer(exchange -> {
+                            exchange.getResponse().getHeaders().set("Permissions-Policy",
+                                    "geolocation=(), camera=(), microphone=(), "
+                                            + "payment=(), usb=(), interest-cohort=()");
+                            return reactor.core.publisher.Mono.empty();
+                        })
                 )
 
                 .build();

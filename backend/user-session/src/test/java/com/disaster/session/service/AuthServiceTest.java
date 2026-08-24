@@ -1,5 +1,6 @@
 package com.disaster.session.service;
 
+import com.disaster.session.audit.AuditService;
 import com.disaster.session.dto.LoginRequest;
 import com.disaster.session.dto.LoginResponse;
 import com.disaster.session.dto.RegisterRequest;
@@ -49,6 +50,14 @@ class AuthServiceTest {
 
     @Mock
     private MfaService mfaService;
+
+    /**
+     * AuthService now writes an audit record on every authentication outcome. Mocked
+     * rather than stubbed per test: the audit trail's own behaviour is covered by
+     * AuditServiceTest, and these tests are about the authentication decisions.
+     */
+    @Mock
+    private AuditService auditService;
 
     @Mock
     private HttpServletRequest httpServletRequest;

@@ -2,6 +2,7 @@ import { createContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@services/api';
 import { toast } from 'react-toastify';
+import { getAccessToken, setAccessToken, clearAccessToken } from '@services/tokenStorage';
 
 export const AuthContext = createContext(null);
 
@@ -27,13 +28,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (token) {
       try {
         const response = await api.get('/auth/me');
         setUser(response.data);
       } catch (error) {
-        localStorage.removeItem('token');
+        clearAccessToken();
         setUser(import.meta.env.VITE_DEMO_MODE === 'true' ? demoUser : null);
       }
     } else if (import.meta.env.VITE_DEMO_MODE === 'true') {
@@ -47,7 +48,7 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/auth/login', { email, password });
       const { access_token, user: userData } = response.data;
 
-      localStorage.setItem('token', access_token);
+      setAccessToken(access_token);
       setUser(userData);
 
       toast.success('Login successful!');
@@ -75,7 +76,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    clearAccessToken();
     setUser(null);
     toast.info('Logged out successfully');
     navigate('/');

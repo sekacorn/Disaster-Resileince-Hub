@@ -130,7 +130,7 @@ public class UserService {
         }
 
         user = userRepository.save(user);
-        log.info("User profile updated: {}", user.getUsername());
+        log.info("User profile updated");
 
         return convertToDto(user);
     }
@@ -162,7 +162,7 @@ public class UserService {
         user.setPasswordChangedAt(LocalDateTime.now());
         userRepository.save(user);
 
-        log.info("Password changed for user: {}", user.getUsername());
+        log.info("Password changed");
     }
 
     /**
@@ -182,7 +182,7 @@ public class UserService {
         // TODO: Store reset token with expiration
         // TODO: Send email with reset link
 
-        log.info("Password reset initiated for user: {}", user.getUsername());
+        log.info("Password reset initiated");
 
         return resetToken;
     }
@@ -226,7 +226,7 @@ public class UserService {
         user.setRole(newRole);
         userRepository.save(user);
 
-        log.info("Role updated for user: {} to {}", user.getUsername(), newRole);
+        log.info("Role updated to {}", newRole);
     }
 
     /**
@@ -242,7 +242,7 @@ public class UserService {
         user.setIsActive(true);
         userRepository.save(user);
 
-        log.info("User activated: {}", user.getUsername());
+        log.info("User account activated");
     }
 
     /**
@@ -258,7 +258,7 @@ public class UserService {
         user.setIsActive(false);
         userRepository.save(user);
 
-        log.info("User deactivated: {}", user.getUsername());
+        log.info("User account deactivated");
     }
 
     /**
@@ -273,7 +273,7 @@ public class UserService {
 
         userRepository.delete(user);
 
-        log.info("User deleted: {}", user.getUsername());
+        log.info("User account deleted");
     }
 
     /**

@@ -7,6 +7,7 @@ import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFac
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
+import com.disaster.gateway.privacy.LogRedactor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -20,7 +21,12 @@ import java.time.Instant;
  * - Request method, URI, headers
  * - Response status code
  * - Request/response duration
- * - User information (if authenticated)
+ * - Pseudonymised user reference (if authenticated)
+ *
+ * <p>Personal data is removed before anything is written. Usernames become stable
+ * pseudonyms, client addresses are truncated to their network portion, and query
+ * string values are redacted, because logs travel further and live longer than the
+ * records they describe. See {@link LogRedactor}.
  *
  * @author Disaster Resilience Hub Team
  */
@@ -29,8 +35,11 @@ public class LoggingFilter extends AbstractGatewayFilterFactory<LoggingFilter.Co
 
     private static final Logger logger = LoggerFactory.getLogger(LoggingFilter.class);
 
-    public LoggingFilter() {
+    private final LogRedactor redactor;
+
+    public LoggingFilter(LogRedactor redactor) {
         super(Config.class);
+        this.redactor = redactor;
     }
 
     @Override
@@ -59,26 +68,29 @@ public class LoggingFilter extends AbstractGatewayFilterFactory<LoggingFilter.Co
     private void logRequest(ServerHttpRequest request) {
         String method = request.getMethod().name();
         String path = request.getPath().value();
-        String queryParams = request.getURI().getQuery() != null ? "?" + request.getURI().getQuery() : "";
-        String remoteAddress = request.getRemoteAddress() != null
-                ? request.getRemoteAddress().getAddress().getHostAddress()
-                : "unknown";
 
-        // Extract user information if available
-        String userId = request.getHeaders().getFirst("X-User-Id");
-        String username = request.getHeaders().getFirst("X-Username");
+        // Query strings routinely carry tokens, email addresses and coordinates.
+        String rawQuery = request.getURI().getQuery();
+        String queryParams = rawQuery != null ? "?" + redactor.redactQueryString(rawQuery) : "";
+
+        String remoteAddress = redactor.truncateAddress(
+                request.getRemoteAddress() != null
+                        ? request.getRemoteAddress().getAddress().getHostAddress()
+                        : null);
+
+        // Pseudonymised rather than raw: still correlatable across a request, but the
+        // log no longer records who made it.
+        String userReference = redactor.pseudonymise(
+                request.getHeaders().getFirst("X-Username"));
 
         StringBuilder logMessage = new StringBuilder();
         logMessage.append("Incoming Request: ")
                 .append(method).append(" ")
                 .append(path).append(queryParams)
-                .append(" | IP: ").append(remoteAddress);
+                .append(" | Source: ").append(remoteAddress);
 
-        if (username != null) {
-            logMessage.append(" | User: ").append(username);
-            if (userId != null) {
-                logMessage.append(" (ID: ").append(userId).append(")");
-            }
+        if (userReference != null) {
+            logMessage.append(" | User: ").append(userReference);
         }
 
         // Log important headers (excluding sensitive information)
@@ -98,7 +110,8 @@ public class LoggingFilter extends AbstractGatewayFilterFactory<LoggingFilter.Co
      */
     private void logResponse(ServerHttpRequest request, ServerHttpResponse response, Duration duration) {
         String method = request.getMethod().name();
-        String path = request.getPath().value();
+        // Path segments can embed identifiers, so it goes through the same scrub.
+        String path = redactor.scrubFreeText(request.getPath().value());
         int statusCode = response.getStatusCode() != null ? response.getStatusCode().value() : 0;
         long durationMs = duration.toMillis();
 

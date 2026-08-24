@@ -94,7 +94,7 @@ public class MfaService {
         // Note: Don't enable MFA yet - wait for verification
         userRepository.save(user);
 
-        log.info("TOTP MFA setup initiated for user: {}", user.getUsername());
+        log.info("TOTP MFA setup initiated");
 
         return MfaSetupResponse.builder()
                 .secret(secret)
@@ -134,11 +134,11 @@ public class MfaService {
         if (isValid) {
             user.setMfaEnabled(true);
             userRepository.save(user);
-            log.info("TOTP MFA enabled for user: {}", user.getUsername());
+            log.info("TOTP MFA enabled");
             return true;
         }
 
-        log.warn("Invalid TOTP code during MFA setup for user: {}", user.getUsername());
+        log.warn("Invalid TOTP code during MFA setup");
         return false;
     }
 
@@ -160,7 +160,7 @@ public class MfaService {
 
         // Check if this is a backup code
         if (verifyBackupCode(user, code)) {
-            log.info("Backup code used for user: {}", user.getUsername());
+            log.info("Backup code used");
             return true;
         }
 
@@ -171,7 +171,7 @@ public class MfaService {
         );
 
         if (recentAttempts >= MAX_MFA_ATTEMPTS) {
-            log.warn("Too many MFA attempts for user: {}", user.getUsername());
+            log.warn("Too many MFA attempts");
             throw new RuntimeException("Too many failed MFA attempts. Please try again later.");
         }
 
@@ -215,7 +215,7 @@ public class MfaService {
             // with the GoogleAuthenticator library and properly stored secrets
             return googleAuthenticator.authorize(user.getMfaSecret(), codeInt);
         } catch (NumberFormatException e) {
-            log.error("Invalid TOTP code format for user: {}", user.getUsername());
+            log.error("Invalid TOTP code format");
             return false;
         }
     }
@@ -242,7 +242,7 @@ public class MfaService {
                 user.setMfaBackupCodes(backupCodes.toArray(new String[0]));
                 userRepository.save(user);
 
-                log.info("Valid backup code used for user: {}", user.getUsername());
+                log.info("Valid backup code used");
                 return true;
             }
         }
@@ -266,7 +266,7 @@ public class MfaService {
         user.setMfaType(null);
         userRepository.save(user);
 
-        log.info("MFA disabled for user: {}", user.getUsername());
+        log.info("MFA disabled");
     }
 
     /**

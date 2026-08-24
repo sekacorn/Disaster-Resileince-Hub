@@ -12,6 +12,8 @@ import com.disaster.session.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import com.disaster.session.audit.AuditEventType;
+import com.disaster.session.audit.AuditService;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,6 +47,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final MfaService mfaService;
+    private final AuditService auditService;
 
     @Value("${auth.max-failed-attempts:5}")
     private int maxFailedAttempts;
@@ -62,26 +65,42 @@ public class AuthService {
     @Transactional
     public LoginResponse login(LoginRequest loginRequest, HttpServletRequest request) {
         // Find user by username or email
+        String sourceAddress = request != null ? request.getRemoteAddr() : null;
+
         User user = userRepository.findByUsernameOrEmail(
                 loginRequest.getUsernameOrEmail(),
                 loginRequest.getUsernameOrEmail()
-        ).orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        ).orElseGet(() -> {
+            // Recorded even though no account matched: a run of these against
+            // different names is credential stuffing, and it is invisible if only
+            // failures against real accounts are audited (NIST AU-2, AC-7).
+            auditService.recordFailure(AuditEventType.LOGIN_FAILED,
+                    loginRequest.getUsernameOrEmail(), "/auth/login", sourceAddress,
+                    "No account matched the supplied identifier");
+            throw new BadCredentialsException("Invalid credentials");
+        });
 
         // Check if account is locked
         if (user.isAccountLocked()) {
-            log.warn("Login attempt on locked account: {}", user.getUsername());
+            // Username removed from the log line; the audit trail carries the
+            // pseudonymised actor instead.
+            log.warn("Login attempt on a locked account");
+            auditService.recordDenied(AuditEventType.LOGIN_FAILED, user.getUsername(),
+                    "/auth/login", sourceAddress, "Account is locked");
             throw new LockedException("Account is locked until " + user.getLockedUntil());
         }
 
         // Check if account is active
         if (!user.getIsActive()) {
-            log.warn("Login attempt on inactive account: {}", user.getUsername());
+            log.warn("Login attempt on an inactive account");
+            auditService.recordDenied(AuditEventType.LOGIN_FAILED, user.getUsername(),
+                    "/auth/login", sourceAddress, "Account is inactive");
             throw new BadCredentialsException("Account is inactive");
         }
 
         // Verify password
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
-            handleFailedLogin(user);
+            handleFailedLogin(user, sourceAddress);
             throw new BadCredentialsException("Invalid credentials");
         }
 
@@ -99,7 +118,10 @@ public class AuthService {
                 // Verify MFA code
                 boolean mfaValid = mfaService.verifyTotp(user.getId(), loginRequest.getMfaCode());
                 if (!mfaValid) {
-                    log.warn("Invalid MFA code for user: {}", user.getUsername());
+                    log.warn("Invalid MFA code supplied");
+                    auditService.recordFailure(AuditEventType.MFA_CHALLENGE_FAILED,
+                            user.getUsername(), "/auth/login", sourceAddress,
+                            "TOTP verification failed");
                     throw new BadCredentialsException("Invalid MFA code");
                 }
             }
@@ -117,7 +139,10 @@ public class AuthService {
         // Create session
         createSession(user, accessToken, refreshToken, request);
 
-        log.info("Successful login for user: {}", user.getUsername());
+        log.info("Successful login");
+        auditService.recordSuccess(AuditEventType.LOGIN_SUCCEEDED, user.getUsername(),
+                "/auth/login", sourceAddress,
+                user.getMfaEnabled() ? "Password and MFA" : "Password only");
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
@@ -165,7 +190,9 @@ public class AuthService {
 
         user = userRepository.save(user);
 
-        log.info("New user registered: {}", user.getUsername());
+        log.info("New user registered");
+        auditService.recordSuccess(AuditEventType.ACCOUNT_CREATED, user.getUsername(),
+                "/auth/register", null, "Role " + user.getRole());
 
         // TODO: Send email verification
         // emailService.sendVerificationEmail(user);
@@ -204,7 +231,7 @@ public class AuthService {
         session.updateLastActivity();
         sessionRepository.save(session);
 
-        log.info("Token refreshed for user: {}", user.getUsername());
+        log.info("Access token refreshed");
 
         return LoginResponse.builder()
                 .accessToken(newAccessToken)
@@ -226,7 +253,10 @@ public class AuthService {
                 .ifPresent(session -> {
                     session.invalidate();
                     sessionRepository.save(session);
-                    log.info("User logged out: {}", session.getUser().getUsername());
+                    log.info("User logged out");
+                    auditService.recordSuccess(AuditEventType.LOGOUT,
+                            session.getUser().getUsername(), "/auth/logout", null,
+                            "Session invalidated by user");
                 });
     }
 
@@ -238,7 +268,9 @@ public class AuthService {
     @Transactional
     public void logoutAll(UUID userId) {
         sessionRepository.invalidateAllSessionsForUser(userId);
-        log.info("All sessions invalidated for user ID: {}", userId);
+        log.info("All sessions invalidated for one account");
+        auditService.recordSuccess(AuditEventType.LOGOUT, userId.toString(),
+                "/auth/logout-all", null, "All sessions invalidated");
     }
 
     /**
@@ -246,18 +278,31 @@ public class AuthService {
      *
      * @param user the user
      */
-    private void handleFailedLogin(User user) {
+    private void handleFailedLogin(User user, String sourceAddress) {
         user.incrementFailedLoginAttempts();
 
-        if (user.getFailedLoginAttempts() >= maxFailedAttempts) {
+        boolean nowLocked = user.getFailedLoginAttempts() >= maxFailedAttempts;
+        if (nowLocked) {
             LocalDateTime lockedUntil = LocalDateTime.now().plusMinutes(lockDurationMinutes);
             user.setIsLocked(true);
             user.setLockedUntil(lockedUntil);
-            log.warn("Account locked for user: {} until {}", user.getUsername(), lockedUntil);
+            log.warn("Account locked until {} after repeated failures", lockedUntil);
         }
 
         userRepository.save(user);
-        log.warn("Failed login attempt for user: {} (attempt {})", user.getUsername(), user.getFailedLoginAttempts());
+        log.warn("Failed login attempt ({} of {})", user.getFailedLoginAttempts(), maxFailedAttempts);
+
+        auditService.recordFailure(AuditEventType.LOGIN_FAILED, user.getUsername(),
+                "/auth/login", sourceAddress,
+                "Incorrect password, attempt " + user.getFailedLoginAttempts()
+                        + " of " + maxFailedAttempts);
+
+        if (nowLocked) {
+            // A separate CRITICAL record so lockouts stand out in review (AU-6).
+            auditService.record(AuditEventType.ACCOUNT_LOCKED, "SUCCESS", user.getUsername(),
+                    "/auth/login", sourceAddress,
+                    "Locked for " + lockDurationMinutes + " minutes");
+        }
     }
 
     /**
@@ -340,7 +385,10 @@ public class AuthService {
                 .forEach(user -> {
                     user.resetFailedLoginAttempts();
                     userRepository.save(user);
-                    log.info("Account unlocked: {}", user.getUsername());
+                    log.info("Account unlocked");
+                    auditService.recordSuccess(AuditEventType.ACCOUNT_UNLOCKED,
+                            user.getUsername(), "/auth/unlock", null,
+                            "Lock period elapsed");
                 });
     }
 
@@ -358,7 +406,10 @@ public class AuthService {
         // Generate a reset token (valid for 1 hour)
         String resetToken = jwtService.generatePasswordResetToken(user);
 
-        log.info("Password reset initiated for user: {}", user.getUsername());
+        log.info("Password reset initiated");
+        auditService.recordSuccess(AuditEventType.PASSWORD_RESET_REQUESTED,
+                user.getUsername(), "/auth/password-reset", null,
+                "Reset token issued");
 
         // In production, send this token via email instead of returning it
         // emailService.sendPasswordResetEmail(user.getEmail(), resetToken);
@@ -392,6 +443,8 @@ public class AuthService {
         // Invalidate all existing sessions for security
         sessionRepository.invalidateAllSessionsForUser(userId);
 
-        log.info("Password reset successfully for user: {}", user.getUsername());
+        log.info("Password reset completed");
+        auditService.recordSuccess(AuditEventType.PASSWORD_CHANGED, user.getUsername(),
+                "/auth/password-reset", null, "Changed via reset token");
     }
 }

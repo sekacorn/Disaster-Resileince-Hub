@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import wsService from '@services/websocket';
 import { useAuth } from './useAuth';
+import { getAccessToken } from '@services/tokenStorage';
 
 export const useWebSocket = () => {
   const { isAuthenticated } = useAuth();
@@ -8,7 +9,7 @@ export const useWebSocket = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       wsService.connect(token);
 
       return () => {
