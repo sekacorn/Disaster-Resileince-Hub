@@ -23,7 +23,7 @@ import java.util.Map;
  * ever created as a side effect of the event they describe.
  */
 @RestController
-@RequestMapping("/audit")
+@RequestMapping("/api/audit")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 public class AuditController {

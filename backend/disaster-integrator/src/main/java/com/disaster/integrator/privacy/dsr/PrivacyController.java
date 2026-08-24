@@ -77,8 +77,11 @@ public class PrivacyController {
         body.put("categoriesErased", receipt.getCategoriesErased());
         body.put("categoriesRetained", receipt.getCategoriesRetained());
         body.put("whyRetained", receipt.getRetentionJustification());
-        body.put("otherServices", "Account data is held separately. To close your account "
-                + "entirely, also call DELETE /api/auth/privacy/me.");
+        body.put("stillHeldElsewhere", java.util.List.of(
+                "user-session holds your account. Erase with "
+                        + "DELETE /api/auth/privacy/me?confirm=true",
+                "collaboration-service holds your session participation and annotations. "
+                        + "Erase with DELETE /api/collaboration/privacy/me?confirm=true"));
         return ResponseEntity.ok(body);
     }
 

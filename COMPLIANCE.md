@@ -29,9 +29,10 @@ in code over operational procedures that would need an organisation behind them.
 | **Art. 5(1)(e)** — storage limitation | Nightly retention sweep for expired location history (`privacy/retention/`) |
 | **Art. 6(1)(a), 7** — consent | Append-only, purpose-scoped consent records storing the lawful basis and the exact wording shown at decision time (`privacy/consent/`) |
 | **Art. 7(3)** — withdrawal as easy as granting | One endpoint handles both directions |
-| **Art. 15, 20** — access and portability | `GET /privacy/export` returns structured JSON |
-| **Art. 16** — rectification | `PUT /data/health/me` |
-| **Art. 17** — erasure | `DELETE /privacy/me`, with a receipt recording what was kept and why |
+| **Art. 13, 14** — transparency | `GET /api/auth/privacy/notice` serves the processing inventory as data, so it cannot drift from the code |
+| **Art. 15, 20** — access and portability | `/privacy/export` on **all three** services holding personal data |
+| **Art. 16** — rectification | `PUT /data/health/me`, `PUT /api/users/{id}` |
+| **Art. 17** — erasure | `/privacy/me?confirm=true` on all three services, each returning a receipt of what was kept and why |
 | **Art. 9(2)(a)** — explicit consent for health data | `EMERGENCY_HEALTH_RESPONSE` carries `EXPLICIT_CONSENT` as its basis |
 
 ### The specific defect this replaced
@@ -41,12 +42,47 @@ encryption behind it. Medical conditions, allergies, medications, mobility and o
 requirements, and insurance policy numbers were stored in plaintext while the record
 asserted otherwise. That assertion is now backed by an actual cipher.
 
+### Data subject rights, by service
+
+| Service | Holds | Access / portability | Erasure |
+|---|---|---|---|
+| `disaster-integrator` | Health records, location history, consent | `GET /api/integrator/privacy/export` | `DELETE /api/integrator/privacy/me?confirm=true` |
+| `user-session` | Account, credentials, sessions, MFA | `GET /api/auth/privacy/export` | `DELETE /api/auth/privacy/me?confirm=true` |
+| `collaboration-service` | Participation, annotations, presence | `GET /api/collaboration/privacy/export` | `DELETE /api/collaboration/privacy/me?confirm=true` |
+
+Two design decisions in this area are worth stating, because both trade a naive reading
+of Art. 17 against something else the regulation also protects.
+
+**Exports withhold credentials.** Password hashes, MFA secrets, backup codes and session
+tokens are not returned. Art. 15 is a right to a copy of personal data, not a mechanism
+for extracting the secrets that protect the account, and Art. 32 argues against putting
+them in a file that gets downloaded and forwarded. Their *existence* and metadata are
+exported, and the withheld fields are listed by name with the reason, so the export is
+not silently incomplete.
+
+**Collaboration erasure anonymises rather than deletes.** Participation records, contact
+details and presence are destroyed. Annotations are kept with authorship severed: an
+annotation reading "bridge out at 5th Street" is a fact about an incident that other
+responders acted on, sitting in a shared record alongside their own work. Art. 17(3)
+preserves processing necessary in the public interest, and Recital 65 frames the right
+as removing data relating to the person rather than withdrawing contributions from a
+shared record. A person who wants the text gone too can pass
+`eraseContributionContent=true`; the pre-confirmation response explains the trade-off
+rather than choosing for them.
+
+Owned sessions are reassigned, never deleted — `CollaborationSession` cascades `ALL`
+with `orphanRemoval`, so deleting one would have destroyed every other participant's
+annotations inside it.
+
+Exports are scoped to the caller's own contributions. Other participants' names and
+annotations are their personal data, and Art. 15(4) does not permit releasing them.
+
 ### Not implemented
 
-- **Data subject rights cover `disaster-integrator` only.** Account data in
-  `user-session` and messages in `collaboration-service` have no export or erasure
-  route. The export output names these gaps explicitly rather than implying it is
-  complete, but a subject cannot yet exercise Art. 15 or 17 against them.
+- **Erasure is not transactional across services.** Each service erases its own data
+  on its own request. A person must call three endpoints, and a failure partway leaves
+  them partially erased. Every response names the remaining endpoints, but there is no
+  orchestrator and no compensating action.
 - **No Records of Processing Activities (Art. 30)** or DPIA. The health data processing
   would require a DPIA before going live — Art. 35(3)(b), large-scale special category
   processing.
@@ -143,9 +179,22 @@ icon-only button has no accessible name.
   eight call sites now route through `services/tokenStorage.js`, which documents the
   weakness and makes the move to an `HttpOnly` cookie a single-file change. **This is
   not resolved** — IA-5 and SC-28 are not fully met for the token.
+- **`collaboration-service` is otherwise unauthenticated.** Its `SecurityConfig` had
+  `permitAll()` on every route with a `// Can add JWT auth later` comment, and its
+  endpoints take the `userId` they act on straight from the request — so
+  `GET /sessions/user/{userId}` returns anyone's sessions to anyone who asks. A JWT
+  filter was added and the `privacy/**` routes now require authentication, because an
+  erasure endpoint trusting a caller-supplied identifier is a button for deleting other
+  people's data. **The remaining routes are still open** (AC-3 gap): closing them needs
+  the frontend and WebSocket callers updated to send a bearer token.
 - **`/api/v1/**` is `permitAll` in the gateway.** Not changed here, because altering
   routing without knowing what depends on it risks breaking the demo — but it warrants
   review.
+- **The gateway rewrite does not match `user-session`'s controller paths.** The route
+  strips `/api/auth`, but every controller in that service is mapped under `/api/...`,
+  so gateway-proxied calls would not reach them. Pre-existing, and unrelated to this
+  work, but it means the privacy routes are currently reachable by addressing the
+  service directly rather than through the gateway.
 - **No AU-4** (audit storage capacity), **AU-5** (response to audit processing failure)
   beyond a log line, or **AU-11** (audit retention policy).
 - **No SI-2 dependency scanning.** `npm audit` reports findings that were not triaged as
@@ -164,7 +213,11 @@ cd backend/disaster-integrator && mvn test -Dtest='FieldEncryptionServiceTest,Co
 ```
 
 ```bash
-cd backend/user-session && mvn test -Dtest=AuditServiceTest
+cd backend/user-session && mvn test -Dtest='AuditServiceTest,AccountDataExportServiceTest,AccountErasureServiceTest'
+```
+
+```bash
+cd backend/collaboration-service && mvn test -Dtest=CollaborationErasureServiceTest
 ```
 
 Accessibility was verified by running `axe-core` against the live application across
